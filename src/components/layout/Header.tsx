@@ -1,4 +1,5 @@
 import { useAuth } from '../../features/auth/AuthContext'
+import { clasesInacap } from '../../lib/theme'
 import type { Usuario } from '../../types/auth'
 
 function getUserDisplayName(usuario: Usuario | null): string {
@@ -18,7 +19,7 @@ export function Header() {
     <header className="border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Inventario IRA</p>
+          <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Inventario IRA</p>
           <h2 className="mt-1 text-xl font-bold text-slate-900">Panel de trabajo</h2>
         </div>
 

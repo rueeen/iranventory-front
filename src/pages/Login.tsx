@@ -99,9 +99,9 @@ export function Login() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-12 text-slate-100">
-      <section className="w-full max-w-md rounded-3xl border border-sky-400/20 bg-slate-900/90 p-8 shadow-2xl shadow-sky-950/50">
+      <section className="w-full max-w-md rounded-3xl border border-red-500/20 bg-slate-900/90 p-8 shadow-2xl shadow-black/50">
         <div className="mb-8 space-y-3 text-center">
-          <span className="inline-flex rounded-full bg-sky-400 px-4 py-1 text-xs font-bold uppercase tracking-widest text-slate-950">
+          <span className="inline-flex rounded-full bg-[#E30613] px-4 py-1 text-xs font-bold uppercase tracking-widest text-white">
             Inventario IRA
           </span>
           <h1 className="text-3xl font-bold tracking-tight">Iniciar sesión</h1>
@@ -117,7 +117,7 @@ export function Login() {
             </label>
             <input
               autoComplete="username"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-[#E30613] focus:ring-2 focus:ring-[#E30613]/30"
               id="username"
               type="text"
               {...register('username')}
@@ -133,7 +133,7 @@ export function Login() {
             </label>
             <input
               autoComplete="current-password"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-[#E30613] focus:ring-2 focus:ring-[#E30613]/30"
               id="password"
               type="password"
               {...register('password')}
@@ -150,7 +150,7 @@ export function Login() {
           ) : null}
 
           <button
-            className="w-full rounded-xl bg-sky-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-[#E30613] px-4 py-3 font-semibold text-white transition hover:bg-[#c90010] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
@@ -158,7 +158,7 @@ export function Login() {
           </button>
         </form>
 
-        <Link className="mt-6 block text-center text-sm text-slate-400 hover:text-sky-300" to="/">
+        <Link className="mt-6 block text-center text-sm text-slate-400 hover:text-red-300" to="/">
           Volver al inicio
         </Link>
       </section>
