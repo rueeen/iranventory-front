@@ -126,7 +126,7 @@ export function Home() {
   return (
     <section className="space-y-6">
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Dashboard</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">Dashboard</p>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Inicio</h1>
@@ -151,7 +151,7 @@ export function Home() {
           </div>
           <div>
             <p className="text-sm text-slate-500">Rol</p>
-            <p className="mt-1 text-xl font-semibold text-sky-700">
+            <p className="mt-1 text-xl font-semibold text-[#E30613]">
               {usuario ? roleLabels[usuario.rol] : 'Rol no disponible'}
             </p>
           </div>
@@ -199,7 +199,7 @@ export function Home() {
 
             return (
               <Link
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md"
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#E30613]/40 hover:shadow-md"
                 key={access.to}
                 to={access.to}
               >

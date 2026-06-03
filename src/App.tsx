@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Home } from './pages/Home'
 import { Compras } from './pages/Compras'
 import { Login } from './pages/Login'
+import { Inventario } from './pages/Inventario'
 import { ModulePlaceholder } from './pages/ModulePlaceholder'
 import { NotFound } from './pages/NotFound'
 import { Prestamos } from './pages/Prestamos'
@@ -37,10 +38,7 @@ function App() {
           path="/inventario"
           element={
             <ProtectedRoute roles={STAFF_ROLES}>
-              <ModulePlaceholder
-                description="Vista base para consultar y administrar artículos, stock y movimientos del inventario."
-                title="Inventario"
-              />
+              <Inventario />
             </ProtectedRoute>
           }
         />
