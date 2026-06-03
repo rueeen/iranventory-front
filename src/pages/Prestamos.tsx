@@ -26,6 +26,7 @@ import {
   etiquetasEstado,
   estilosEstado,
   formatearFecha,
+  formatearFechaCorta,
   obtenerUsernameSolicitante,
   type AccionPrestamo,
 } from '../lib/prestamos'
@@ -442,6 +443,8 @@ export function Prestamos() {
   const prestamos = prestamosQuery.data?.results ?? []
   const totalPrestamos = prestamosQuery.data?.count ?? 0
   const totalPaginas = Math.max(1, Math.ceil(totalPrestamos / PRESTAMOS_PAGE_SIZE))
+  const indiceInicialPagina = totalPrestamos === 0 ? 0 : (page - 1) * PRESTAMOS_PAGE_SIZE + 1
+  const indiceFinalPagina = Math.min(page * PRESTAMOS_PAGE_SIZE, totalPrestamos)
 
   useEffect(() => {
     if (page > totalPaginas) {
@@ -637,7 +640,7 @@ export function Prestamos() {
                   <td className="px-5 py-4 font-semibold text-slate-950">#{prestamo.id}</td>
                   <td className="px-5 py-4 text-slate-700">{obtenerUsernameSolicitante(prestamo)}</td>
                   <td className="px-5 py-4"><EstadoBadge estado={prestamo.estado} /></td>
-                  <td className="px-5 py-4 text-slate-600">{formatearFecha(prestamo.fecha_solicitud)}</td>
+                  <td className="px-5 py-4 text-slate-600">{formatearFechaCorta(prestamo.fecha_solicitud)}</td>
                   <td className="px-5 py-4 text-slate-600">{prestamo.detalles?.length ?? 0}</td>
                   <td className="px-5 py-4">
                     <button
@@ -655,13 +658,21 @@ export function Prestamos() {
         </div>
 
         <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-slate-600">
-            Página {page} de {totalPaginas}
-          </p>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-slate-600">
+              Página {page} de {totalPaginas}
+            </p>
+            <p className="text-xs font-medium text-slate-500" aria-live="polite">
+              {totalPrestamos > 0
+                ? `Mostrando ${indiceInicialPagina}-${indiceFinalPagina} de ${totalPrestamos} préstamos`
+                : 'Sin préstamos para esta búsqueda'}
+              {prestamosQuery.isFetching && !prestamosQuery.isLoading ? ' · Actualizando...' : ''}
+            </p>
+          </div>
           <div className="flex gap-3">
             <button
               className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
-              disabled={page <= 1 || prestamosQuery.isLoading}
+              disabled={page <= 1 || prestamosQuery.isFetching}
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               type="button"
             >
@@ -669,7 +680,7 @@ export function Prestamos() {
             </button>
             <button
               className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
-              disabled={page >= totalPaginas || prestamosQuery.isLoading}
+              disabled={page >= totalPaginas || prestamosQuery.isFetching}
               onClick={() => setPage((prev) => Math.min(totalPaginas, prev + 1))}
               type="button"
             >

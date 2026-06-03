@@ -79,6 +79,23 @@ export function formatearFecha(fecha: string | null): string {
   }).format(date)
 }
 
+export function formatearFechaCorta(fecha: string | null): string {
+  if (!fecha) {
+    return 'Sin fecha'
+  }
+
+  const date = new Date(fecha)
+
+  if (Number.isNaN(date.getTime())) {
+    return fecha
+  }
+
+  return new Intl.DateTimeFormat('es-CL', {
+    dateStyle: 'short',
+    timeStyle: fecha.includes('T') ? 'short' : undefined,
+  }).format(date)
+}
+
 export function formatearTexto(valor: string | null | undefined, fallback = 'Sin observaciones'): string {
   return valor?.trim() ? valor : fallback
 }
