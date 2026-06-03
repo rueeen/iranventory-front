@@ -21,4 +21,11 @@ export const queryKeys = {
   itemsOrdenCompra: resourceKeys('itemsOrdenCompra'),
   prestamos: resourceKeys('prestamos'),
   usuarios: resourceKeys('usuarios'),
+  dashboard: {
+    all: ['dashboard'] as const,
+    totalTiposEquipo: () => ['dashboard', 'totalTiposEquipo'] as const,
+    totalUnidades: () => ['dashboard', 'totalUnidades'] as const,
+    totalPrestamos: () => ['dashboard', 'totalPrestamos'] as const,
+    totalOrdenesCompra: () => ['dashboard', 'totalOrdenesCompra'] as const,
+  },
 }
