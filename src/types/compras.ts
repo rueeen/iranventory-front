@@ -4,6 +4,7 @@ export type EstadoOrdenCompra = 'BORRADOR' | 'EN_REVISION' | 'ACEPTADA' | 'RECHA
 
 export type ItemOrdenCompra = {
   id: number
+  orden_compra?: number
   tipo_equipo: TipoEquipo
   cantidad_solicitada: number
   cantidad_recibida: number
@@ -21,6 +22,13 @@ export type ItemOrdenCompraInput = {
   ubicacion_id?: number | null
   observaciones?: string
 }
+
+export type ItemOrdenCompraCreateInput = ItemOrdenCompraInput & {
+  orden_compra_id: number
+  orden_compra?: number
+}
+
+export type ItemOrdenCompraUpdateInput = Partial<ItemOrdenCompraInput>
 
 export type OrdenCompra = {
   id: number
@@ -41,9 +49,16 @@ export type OrdenCompra = {
 }
 
 export type OrdenCompraInput = {
+  numero?: string
   proveedor?: string
   numero_documento?: string
   fecha_documento?: string | null
   observaciones?: string
   items?: ItemOrdenCompraInput[]
+}
+
+export type AccionRechazarOrdenCompraInput = {
+  observacion?: string
+  observaciones?: string
+  motivo?: string
 }
