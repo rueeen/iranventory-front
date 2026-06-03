@@ -1,3 +1,4 @@
+import type { Usuario } from './auth'
 import type { Asignatura, TipoEquipo } from './catalogo'
 import type { EstadoUnidad, Unidad } from './inventario'
 
@@ -30,7 +31,7 @@ export type DetallePrestamoInput = {
 
 export type Prestamo = {
   id: number
-  solicitante: number
+  solicitante: number | Pick<Usuario, 'id' | 'username' | 'email' | 'first_name' | 'last_name'>
   asignatura: Asignatura | null
   estado: EstadoPrestamo
   fecha_solicitud: string
@@ -42,7 +43,7 @@ export type Prestamo = {
   cerrado_por: number | null
   motivo_rechazo: string
   observaciones: string
-  detalles: DetallePrestamo[]
+  detalles?: DetallePrestamo[]
 }
 
 export type PrestamoInput = {

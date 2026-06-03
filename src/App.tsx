@@ -6,6 +6,7 @@ import { Home } from './pages/Home'
 import { Login } from './pages/Login'
 import { ModulePlaceholder } from './pages/ModulePlaceholder'
 import { NotFound } from './pages/NotFound'
+import { Prestamos } from './pages/Prestamos'
 import type { Rol } from './types/auth'
 
 const ALL_ROLES: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
@@ -46,10 +47,7 @@ function App() {
           path="/prestamos"
           element={
             <ProtectedRoute roles={ALL_ROLES}>
-              <ModulePlaceholder
-                description="Vista base para registrar solicitudes, entregas y devoluciones de préstamos."
-                title="Préstamos"
-              />
+              <Prestamos />
             </ProtectedRoute>
           }
         />
