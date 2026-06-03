@@ -3,26 +3,21 @@ import type { ListParams, Paginated } from '../types/api'
 import type { EstadoPrestamo, Prestamo, PrestamoInput } from '../types/prestamos'
 
 export type PrestamosFiltros = {
-  busqueda?: string
+  page?: number
+  search?: string
   estado?: EstadoPrestamo | ''
-}
-
-type RespuestaListaPrestamos = Paginated<Prestamo> | Prestamo[]
-
-function esRespuestaPaginada<T>(response: Paginated<T> | T[]): response is Paginated<T> {
-  return !Array.isArray(response) && Array.isArray(response.results)
-}
-
-function obtenerResultadosPrestamos(response: RespuestaListaPrestamos): Prestamo[] {
-  return esRespuestaPaginada(response) ? response.results : response
 }
 
 function construirParams(filtros?: PrestamosFiltros): ListParams {
   const params: ListParams = {}
-  const busqueda = filtros?.busqueda?.trim()
+  const search = filtros?.search?.trim()
 
-  if (busqueda) {
-    params.search = busqueda
+  if (filtros?.page) {
+    params.page = filtros.page
+  }
+
+  if (search) {
+    params.search = search
   }
 
   if (filtros?.estado) {
@@ -32,12 +27,12 @@ function construirParams(filtros?: PrestamosFiltros): ListParams {
   return params
 }
 
-export async function obtenerPrestamos(filtros?: PrestamosFiltros): Promise<Prestamo[]> {
-  const { data } = await client.get<RespuestaListaPrestamos>('/api/prestamos/', {
+export async function obtenerPrestamos(filtros?: PrestamosFiltros): Promise<Paginated<Prestamo>> {
+  const { data } = await client.get<Paginated<Prestamo>>('/api/prestamos/', {
     params: construirParams(filtros),
   })
 
-  return obtenerResultadosPrestamos(data)
+  return data
 }
 
 export async function obtenerPrestamo(id: number): Promise<Prestamo> {
