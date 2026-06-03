@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
+import { AsyncCombobox } from '../components/AsyncCombobox'
 import { comprasApi, type ComprasFiltros } from '../api/compras'
 import { clasesInacap } from '../lib/theme'
 import { queryKeys } from '../lib/queryKeys'
@@ -33,6 +34,7 @@ type OrdenFormState = {
 
 type ItemFormState = {
   tipoEquipoId: string
+  tipoEquipo: TipoEquipo | null
   cantidadSolicitada: string
   cantidadRecibida: string
   codigosActivo: string
@@ -61,6 +63,7 @@ const estilosEstado: Record<EstadoOrdenCompra, string> = {
 
 const emptyItemForm: ItemFormState = {
   tipoEquipoId: '',
+  tipoEquipo: null,
   cantidadSolicitada: '1',
   cantidadRecibida: '0',
   codigosActivo: '',
@@ -115,6 +118,7 @@ function crearItemFormState(item?: ItemOrdenCompra): ItemFormState {
   return item
     ? {
         tipoEquipoId: String(item.tipo_equipo.id),
+        tipoEquipo: item.tipo_equipo,
         cantidadSolicitada: String(item.cantidad_solicitada),
         cantidadRecibida: String(item.cantidad_recibida),
         codigosActivo: item.codigos_activo.join('\n'),
@@ -150,10 +154,9 @@ function construirItemInput(form: ItemFormState): ItemOrdenCompraInput {
   }
 }
 
-function validarItem(form: ItemFormState, tiposEquipo: TipoEquipo[]): string | null {
-  if (!form.tipoEquipoId) return 'Selecciona un tipo de equipo.'
-  const tipo = tiposEquipo.find((actual) => actual.id === Number(form.tipoEquipoId))
-  if (!tipo) return 'El tipo de equipo seleccionado no está disponible.'
+function validarItem(form: ItemFormState): string | null {
+  if (!form.tipoEquipoId || !form.tipoEquipo) return 'Selecciona un tipo de equipo.'
+  const tipo = form.tipoEquipo
   const solicitada = Number(form.cantidadSolicitada)
   const recibida = Number(form.cantidadRecibida)
   if (!Number.isFinite(solicitada) || solicitada < 1) return 'La cantidad solicitada debe ser mayor a cero.'
@@ -548,7 +551,7 @@ export function Compras() {
   const guardarItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setClientError(null)
-    const error = validarItem(itemForm, tiposEquipoQuery.data ?? [])
+    const error = validarItem(itemForm)
     if (error) {
       setClientError(error)
       return
@@ -713,7 +716,25 @@ export function Compras() {
             {clientError ? <div className="mt-4"><ErrorPanel message={clientError} /></div> : null}
             {guardarItemMutation.isError ? <div className="mt-4"><ErrorPanel message={extractApiErrorMessage(guardarItemMutation.error)} /></div> : null}
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 md:col-span-2"><FieldLabel>Tipo de equipo</FieldLabel><select required className={`w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ${clasesInacap.focoMarca}`} value={itemForm.tipoEquipoId} onChange={(event) => setItemForm((prev) => ({ ...prev, tipoEquipoId: event.target.value }))}><option value="">Selecciona tipo de equipo</option>{(tiposEquipoQuery.data ?? []).map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.nombre} · {tipo.tipo_seguimiento}</option>)}</select></label>
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="tipo-equipo-compra"><FieldLabel>Tipo de equipo</FieldLabel></label>
+                <AsyncCombobox<TipoEquipo>
+                  fetchOptions={catalogoApi.buscarTiposEquipo}
+                  getOptionId={(tipo) => tipo.id}
+                  getOptionLabel={(tipo) => `${tipo.nombre} · ${tipo.tipo_seguimiento}`}
+                  id="tipo-equipo-compra"
+                  onChange={(id, tipoEquipo) =>
+                    setItemForm((prev) => ({
+                      ...prev,
+                      tipoEquipoId: id ? String(id) : '',
+                      tipoEquipo,
+                    }))
+                  }
+                  placeholder="Buscar tipo de equipo"
+                  selectedItem={itemForm.tipoEquipo}
+                  value={itemForm.tipoEquipoId ? Number(itemForm.tipoEquipoId) : null}
+                />
+              </div>
               <label className="space-y-2"><FieldLabel>Cantidad solicitada</FieldLabel><input min="1" required type="number" className={`w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ${clasesInacap.focoMarca}`} value={itemForm.cantidadSolicitada} onChange={(event) => setItemForm((prev) => ({ ...prev, cantidadSolicitada: event.target.value }))} /></label>
               <label className="space-y-2"><FieldLabel>Cantidad recibida</FieldLabel><input min="0" required type="number" className={`w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ${clasesInacap.focoMarca}`} value={itemForm.cantidadRecibida} onChange={(event) => setItemForm((prev) => ({ ...prev, cantidadRecibida: event.target.value }))} /></label>
               <label className="space-y-2 md:col-span-2"><FieldLabel>Ubicación</FieldLabel><select className={`w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ${clasesInacap.focoMarca}`} value={itemForm.ubicacionId} onChange={(event) => setItemForm((prev) => ({ ...prev, ubicacionId: event.target.value }))}><option value="">Sin ubicación</option>{(ubicacionesQuery.data ?? []).map((ubicacion) => <option key={ubicacion.id} value={ubicacion.id}>{ubicacionLabel(ubicacion)}</option>)}</select></label>

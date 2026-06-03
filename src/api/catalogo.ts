@@ -47,6 +47,10 @@ export function obtenerTiposEquipo(params?: ListParams): Promise<TipoEquipo[]> {
   return obtenerResultadosCatalogo<TipoEquipo>('/api/tipos-equipo/', params)
 }
 
+export function buscarTiposEquipo(search: string): Promise<TipoEquipo[]> {
+  return obtenerResultadosCatalogo<TipoEquipo>('/api/tipos-equipo/', { search })
+}
+
 export async function crearTipoEquipo(input: TipoEquipoInput): Promise<TipoEquipo> {
   const { data } = await client.post<TipoEquipo>('/api/tipos-equipo/', input)
   return data
@@ -63,6 +67,7 @@ export const catalogoApi = {
   obtenerAsignaturas,
   obtenerUbicaciones,
   obtenerTiposEquipo,
+  buscarTiposEquipo,
   crearTipoEquipo,
   actualizarTipoEquipo,
 }
