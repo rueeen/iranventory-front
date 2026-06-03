@@ -11,6 +11,7 @@ type DashboardMetric = {
   title: string
   description: string
   query: UseQueryResult<DashboardTotal, Error>
+  roles: Rol[]
 }
 
 type QuickAccess = {
@@ -20,24 +21,27 @@ type QuickAccess = {
   roles: Rol[]
 }
 
+const rolesStaff: Rol[] = ['PANOLERO', 'DIRECTOR']
+const rolesPrestamos: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
+
 const quickAccesses: QuickAccess[] = [
   {
     label: 'Ver inventario',
     description: 'Consultar tipos de equipo, unidades y disponibilidad.',
     to: '/inventario',
-    roles: ['PANOLERO', 'DIRECTOR'],
+    roles: rolesStaff,
   },
   {
     label: 'Ver préstamos',
     description: 'Revisar solicitudes, entregas y devoluciones.',
     to: '/prestamos',
-    roles: ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR'],
+    roles: rolesPrestamos,
   },
   {
     label: 'Ver compras',
     description: 'Dar seguimiento a órdenes y necesidades de compra.',
     to: '/compras',
-    roles: ['PANOLERO', 'DIRECTOR'],
+    roles: rolesStaff,
   },
 ]
 
@@ -85,21 +89,28 @@ function MetricCard({ description, query, title }: DashboardMetric) {
 export function Home() {
   const { usuario } = useAuth()
 
+  const puedeVerMetricasStaff = tieneRol(usuario, rolesStaff)
+  const puedeVerMetricasPrestamos = tieneRol(usuario, rolesPrestamos)
+
   const totalTiposEquipoQuery = useQuery<DashboardTotal, Error>({
     queryKey: queryKeys.dashboard.totalTiposEquipo(),
     queryFn: dashboardApi.obtenerTotalTiposEquipo,
+    enabled: puedeVerMetricasStaff,
   })
   const totalUnidadesQuery = useQuery<DashboardTotal, Error>({
     queryKey: queryKeys.dashboard.totalUnidades(),
     queryFn: dashboardApi.obtenerTotalUnidades,
+    enabled: puedeVerMetricasStaff,
   })
   const totalPrestamosQuery = useQuery<DashboardTotal, Error>({
     queryKey: queryKeys.dashboard.totalPrestamos(),
     queryFn: dashboardApi.obtenerTotalPrestamos,
+    enabled: puedeVerMetricasPrestamos,
   })
   const totalOrdenesCompraQuery = useQuery<DashboardTotal, Error>({
     queryKey: queryKeys.dashboard.totalOrdenesCompra(),
     queryFn: dashboardApi.obtenerTotalOrdenesCompra,
+    enabled: puedeVerMetricasStaff,
   })
 
   const metrics: DashboardMetric[] = [
@@ -107,23 +118,29 @@ export function Home() {
       title: 'Tipos de equipo',
       description: 'Total de tipos registrados en el catálogo.',
       query: totalTiposEquipoQuery,
+      roles: rolesStaff,
     },
     {
       title: 'Unidades',
       description: 'Total de unidades registradas en inventario.',
       query: totalUnidadesQuery,
+      roles: rolesStaff,
     },
     {
       title: 'Préstamos',
       description: 'Total de préstamos registrados.',
       query: totalPrestamosQuery,
+      roles: rolesPrestamos,
     },
     {
       title: 'Órdenes de compra',
       description: 'Total de órdenes de compra registradas.',
       query: totalOrdenesCompraQuery,
+      roles: rolesStaff,
     },
   ]
+
+  const visibleMetrics = metrics.filter((metric) => tieneRol(usuario, metric.roles))
 
   return (
     <section className="space-y-6">
@@ -170,7 +187,7 @@ export function Home() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => (
+          {visibleMetrics.map((metric) => (
             <MetricCard key={metric.title} {...metric} />
           ))}
         </div>
