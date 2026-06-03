@@ -57,21 +57,21 @@ const etiquetasEstado: Record<EstadoUnidad, string> = {
 }
 
 const estilosSeguimiento: Record<TipoSeguimiento, string> = {
-  SERIE: 'bg-blue-50 text-blue-700 ring-blue-200',
+  SERIE: clasesInacap.chipInformacion,
   GRANEL: 'bg-slate-100 text-slate-700 ring-slate-300',
 }
 
 const estilosSituacion: Record<SituacionUnidad, string> = {
-  DISPONIBLE: 'bg-green-50 text-green-700 ring-green-200',
-  PRESTADA: 'bg-blue-50 text-blue-700 ring-blue-200',
-  REPARACION: 'bg-amber-50 text-amber-700 ring-amber-200',
-  BAJA: 'bg-red-50 text-red-700 ring-red-200',
+  DISPONIBLE: clasesInacap.chipExito,
+  PRESTADA: clasesInacap.chipInformacion,
+  REPARACION: clasesInacap.chipAdvertencia,
+  BAJA: clasesInacap.chipError,
 }
 
 const estilosEstado: Record<EstadoUnidad, string> = {
-  BUENO: 'bg-green-50 text-green-700 ring-green-200',
-  REPARABLE: 'bg-amber-50 text-amber-700 ring-amber-200',
-  MALO: 'bg-red-50 text-red-700 ring-red-200',
+  BUENO: clasesInacap.chipExito,
+  REPARABLE: clasesInacap.chipAdvertencia,
+  MALO: clasesInacap.chipError,
 }
 
 function normalizarTexto(valor: string): string {
@@ -154,7 +154,7 @@ function Badge({ children, className }: { children: ReactNode; className: string
 function ActionButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button
-      className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 ${clasesInacap.fondoMarca}`}
+      className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${clasesInacap.botonPrimario}`}
       type="button"
       onClick={onClick}
     >
@@ -166,7 +166,7 @@ function ActionButton({ children, onClick }: { children: ReactNode; onClick: () 
 function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button
-      className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${clasesInacap.botonSecundario}`}
       type="button"
       onClick={onClick}
     >
@@ -218,7 +218,7 @@ function unidadCoincide(
 }
 
 function ErrorPanel({ message }: { message: string }) {
-  return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{message}</div>
+  return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#DC2626]">{message}</div>
 }
 
 function EmptyState({ message }: { message: string }) {
@@ -342,7 +342,8 @@ export function Inventario() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="absolute left-0 top-0 h-1 w-full bg-[#E30613]" />
         <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Inventario</p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -361,14 +362,14 @@ export function Inventario() {
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-center md:justify-between">
           <div className="flex rounded-2xl bg-slate-100 p-1">
             <button
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tabActiva === 'TIPOS' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tabActiva === 'TIPOS' ? 'bg-[#E30613] text-white shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
               type="button"
               onClick={() => setTabActiva('TIPOS')}
             >
               Tipos de equipo
             </button>
             <button
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tabActiva === 'UNIDADES' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tabActiva === 'UNIDADES' ? 'bg-[#E30613] text-white shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
               type="button"
               onClick={() => setTabActiva('UNIDADES')}
             >

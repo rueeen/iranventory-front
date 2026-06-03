@@ -43,10 +43,11 @@ export function Sidebar() {
   const visibleItems = menuItems.filter((item) => usuario && item.roles.includes(usuario.rol))
 
   return (
-    <aside className="flex w-full flex-col border-b border-slate-200 bg-[#111827] text-white md:min-h-screen md:w-64 md:border-b-0 md:border-r">
+    <aside className="flex w-full flex-col border-b border-slate-900 bg-[#111827] text-white md:min-h-screen md:w-64 md:border-b-0 md:border-r md:border-slate-900">
       <div className="border-b border-slate-800 px-6 py-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-red-200">Sistema</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-red-200">Sistema institucional</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Inventario IRA</h1>
+        <div className="mt-4 h-1 w-16 rounded-full bg-[#E30613]" />
       </div>
 
       <nav className="flex gap-2 overflow-x-auto px-4 py-4 md:flex-1 md:flex-col md:overflow-visible">
@@ -56,8 +57,8 @@ export function Sidebar() {
               [
                 'whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition',
                 isActive
-                  ? `${clasesInacap.fondoMarca} text-white shadow-lg shadow-black/30`
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white',
+                  ? `${clasesInacap.fondoMarca} text-white shadow-lg shadow-[#E30613]/25`
+                  : 'text-slate-300 hover:bg-[#374151] hover:text-white',
               ].join(' ')
             }
             end={item.to === '/'}

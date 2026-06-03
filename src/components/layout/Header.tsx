@@ -21,6 +21,7 @@ export function Header() {
         <div>
           <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Inventario IRA</p>
           <h2 className="mt-1 text-xl font-bold text-slate-900">Panel de trabajo</h2>
+          <div className="mt-3 h-1 w-20 rounded-full bg-[#E30613]" />
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -30,7 +31,7 @@ export function Header() {
           </div>
 
           <button
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${clasesInacap.botonSecundario}`}
             type="button"
             onClick={() => {
               void logout()
