@@ -1,22 +1,81 @@
 import { Route, Routes } from 'react-router-dom'
 
+import { AppLayout } from './components/layout/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
+import { ModulePlaceholder } from './pages/ModulePlaceholder'
 import { NotFound } from './pages/NotFound'
+import type { Rol } from './types/auth'
+
+const ALL_ROLES: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
+const STAFF_ROLES: Rol[] = ['PANOLERO', 'DIRECTOR']
+const DIRECTOR_ROLES: Rol[] = ['DIRECTOR']
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
-        path="/"
         element={
           <ProtectedRoute>
-            <Home />
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventario"
+          element={
+            <ProtectedRoute roles={STAFF_ROLES}>
+              <ModulePlaceholder
+                description="Vista base para consultar y administrar artículos, stock y movimientos del inventario."
+                title="Inventario"
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prestamos"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <ModulePlaceholder
+                description="Vista base para registrar solicitudes, entregas y devoluciones de préstamos."
+                title="Préstamos"
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/compras"
+          element={
+            <ProtectedRoute roles={STAFF_ROLES}>
+              <ModulePlaceholder
+                description="Vista base para revisar necesidades de compra y seguimiento de adquisiciones."
+                title="Compras"
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <ProtectedRoute roles={DIRECTOR_ROLES}>
+              <ModulePlaceholder
+                description="Vista base para la futura administración de usuarios y permisos del sistema."
+                title="Usuarios"
+              />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
