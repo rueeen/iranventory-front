@@ -2,8 +2,9 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
 import { dashboardApi, type DashboardTotal } from '../api/dashboard'
-import { useAuth } from '../features/auth/AuthContext'
+import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { queryKeys } from '../lib/queryKeys'
+import type { Rol } from '../types/auth'
 
 type DashboardMetric = {
   title: string
@@ -15,6 +16,7 @@ type QuickAccess = {
   label: string
   description: string
   to: string
+  roles: Rol[]
 }
 
 const quickAccesses: QuickAccess[] = [
@@ -22,18 +24,28 @@ const quickAccesses: QuickAccess[] = [
     label: 'Ver inventario',
     description: 'Consultar tipos de equipo, unidades y disponibilidad.',
     to: '/inventario',
+    roles: ['PANOLERO', 'DIRECTOR'],
   },
   {
     label: 'Ver préstamos',
     description: 'Revisar solicitudes, entregas y devoluciones.',
     to: '/prestamos',
+    roles: ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR'],
   },
   {
     label: 'Ver compras',
     description: 'Dar seguimiento a órdenes y necesidades de compra.',
     to: '/compras',
+    roles: ['PANOLERO', 'DIRECTOR'],
   },
 ]
+
+const roleLabels: Record<Rol, string> = {
+  ALUMNO: 'Alumno',
+  DOCENTE: 'Docente',
+  PANOLERO: 'Pañolero',
+  DIRECTOR: 'Director',
+}
 
 function formatTotal(total: number): string {
   return new Intl.NumberFormat('es-CL').format(total)
@@ -133,11 +145,15 @@ export function Home() {
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-sm text-slate-500">Username</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{usuario?.username}</p>
+            <p className="mt-1 text-xl font-semibold text-slate-950">
+              {usuario?.username ?? 'Usuario sin identificar'}
+            </p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Rol</p>
-            <p className="mt-1 text-xl font-semibold text-sky-700">{usuario?.rol}</p>
+            <p className="mt-1 text-xl font-semibold text-sky-700">
+              {usuario ? roleLabels[usuario.rol] : 'Rol no disponible'}
+            </p>
           </div>
         </div>
       </article>
@@ -163,16 +179,35 @@ export function Home() {
           <p className="mt-1 text-sm text-slate-500">Atajos a las vistas principales del sistema.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {quickAccesses.map((access) => (
-            <Link
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md"
-              key={access.to}
-              to={access.to}
-            >
-              <span className="text-base font-semibold text-slate-950">{access.label}</span>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{access.description}</p>
-            </Link>
-          ))}
+          {quickAccesses.map((access) => {
+            const canAccess = tieneRol(usuario, access.roles)
+
+            if (!canAccess) {
+              return (
+                <article
+                  className="rounded-2xl border border-slate-200 bg-slate-100 p-5 text-slate-400 shadow-sm"
+                  key={access.to}
+                >
+                  <span className="text-base font-semibold">{access.label}</span>
+                  <p className="mt-2 text-sm leading-6">{access.description}</p>
+                  <p className="mt-4 rounded-xl bg-white px-3 py-2 text-xs font-medium text-slate-500">
+                    Tu rol no tiene permiso para entrar a este módulo.
+                  </p>
+                </article>
+              )
+            }
+
+            return (
+              <Link
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md"
+                key={access.to}
+                to={access.to}
+              >
+                <span className="text-base font-semibold text-slate-950">{access.label}</span>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{access.description}</p>
+              </Link>
+            )
+          })}
         </div>
       </div>
     </section>
