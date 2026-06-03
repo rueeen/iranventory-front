@@ -1,5 +1,5 @@
 import { client } from './client'
-import { obtenerListaDesdeRespuesta, type RespuestaListaCatalogo } from './catalogo'
+import { fetchAllPages } from './pagination'
 import type { ListParams } from '../types/api'
 import type { Proveedor, ProveedorInput } from '../types/compras'
 
@@ -7,8 +7,6 @@ export type ProveedoresFiltros = {
   search?: string
   activo?: boolean | ''
 }
-
-type RespuestaListaProveedores = RespuestaListaCatalogo<Proveedor>
 
 function construirParams(filtros?: ProveedoresFiltros): ListParams {
   const params: ListParams = {}
@@ -20,11 +18,8 @@ function construirParams(filtros?: ProveedoresFiltros): ListParams {
   return params
 }
 
-export async function obtenerProveedores(filtros?: ProveedoresFiltros): Promise<Proveedor[]> {
-  const { data } = await client.get<RespuestaListaProveedores>('/api/proveedores/', {
-    params: construirParams(filtros),
-  })
-  return obtenerListaDesdeRespuesta(data)
+export function obtenerProveedores(filtros?: ProveedoresFiltros): Promise<Proveedor[]> {
+  return fetchAllPages<Proveedor>('/api/proveedores/', construirParams(filtros))
 }
 
 export function buscarProveedores(search: string): Promise<Proveedor[]> {

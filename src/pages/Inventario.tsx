@@ -1,9 +1,9 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
-import { inventarioApi } from '../api/inventario'
-import { extractApiErrorMessage } from '../types/api'
+import { inventarioApi, type UnidadesFiltros } from '../api/inventario'
+import { extractApiErrorMessage, type Paginated } from '../types/api'
 import { clasesInacap } from '../lib/theme'
 import { queryKeys } from '../lib/queryKeys'
 import type { Categoria, TipoEquipo, TipoEquipoInput, TipoSeguimiento } from '../types/catalogo'
@@ -12,6 +12,7 @@ import type { EstadoUnidad, SituacionUnidad, Unidad, UnidadInput } from '../type
 const tiposSeguimiento: TipoSeguimiento[] = ['SERIE', 'GRANEL']
 const situacionesUnidad: SituacionUnidad[] = ['DISPONIBLE', 'PRESTADA', 'REPARACION', 'BAJA']
 const estadosUnidad: EstadoUnidad[] = ['BUENO', 'REPARABLE', 'MALO']
+const UNIDADES_PAGE_SIZE = 25
 
 type FiltroRevision = 'TODAS' | 'SI' | 'NO'
 type TabInventario = 'TIPOS' | 'UNIDADES'
@@ -186,36 +187,6 @@ function tiposEquipoCoincide(tipo: TipoEquipo, busqueda: string, seguimiento: Ti
   return coincideBusqueda && (seguimiento === 'TODOS' || tipo.tipo_seguimiento === seguimiento)
 }
 
-function unidadCoincide(
-  unidad: Unidad,
-  busqueda: string,
-  situacion: SituacionUnidad | 'TODAS',
-  estado: EstadoUnidad | 'TODOS',
-  revision: FiltroRevision,
-) {
-  const termino = normalizarTexto(busqueda.trim())
-  const coincideBusqueda = termino
-    ? [
-        unidad.codigo_activo ?? '',
-        unidad.tipo_equipo.nombre,
-        unidad.tipo_equipo.especificacion,
-        unidad.estado,
-        unidad.situacion,
-        unidad.ubicacion?.nombre ?? '',
-        unidad.ubicacion?.sede ?? '',
-      ].some((valor) => normalizarTexto(valor).includes(termino))
-    : true
-
-  const coincideRevision =
-    revision === 'TODAS' || (revision === 'SI' ? unidad.requiere_revision : !unidad.requiere_revision)
-
-  return (
-    coincideBusqueda &&
-    (situacion === 'TODAS' || unidad.situacion === situacion) &&
-    (estado === 'TODOS' || unidad.estado === estado) &&
-    coincideRevision
-  )
-}
 
 function ErrorPanel({ message }: { message: string }) {
   return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#DC2626]">{message}</div>
@@ -245,15 +216,27 @@ export function Inventario() {
   const [tipoForm, setTipoForm] = useState<TipoEquipoFormState>(crearEstadoTipoEquipo())
   const [unidadFormMode, setUnidadFormMode] = useState<UnidadFormMode | null>(null)
   const [unidadForm, setUnidadForm] = useState<UnidadFormState>(crearEstadoUnidad())
+  const [unidadesPage, setUnidadesPage] = useState(1)
 
   const tiposEquipoQuery = useQuery<TipoEquipo[], Error>({
     queryKey: queryKeys.tiposEquipo.list(),
     queryFn: () => catalogoApi.obtenerTiposEquipo(),
   })
 
-  const unidadesQuery = useQuery<Unidad[], Error>({
-    queryKey: queryKeys.unidades.list(),
-    queryFn: () => inventarioApi.obtenerUnidades(),
+  const unidadesFiltros: UnidadesFiltros = useMemo(
+    () => ({
+      busqueda,
+      estado,
+      situacion,
+      requiereRevision,
+      page: unidadesPage,
+    }),
+    [busqueda, estado, requiereRevision, situacion, unidadesPage],
+  )
+
+  const unidadesQuery = useQuery<Paginated<Unidad>, Error>({
+    queryKey: queryKeys.unidades.list(unidadesFiltros),
+    queryFn: () => inventarioApi.obtenerUnidadesPaginadas(unidadesFiltros),
   })
 
   const categoriasQuery = useQuery<Categoria[], Error>({
@@ -295,13 +278,21 @@ export function Inventario() {
     [busqueda, tipoSeguimiento, tiposEquipoQuery.data],
   )
 
-  const unidadesFiltradas = useMemo(
-    () =>
-      (unidadesQuery.data ?? []).filter((unidad) =>
-        unidadCoincide(unidad, busqueda, situacion, estado, requiereRevision),
-      ),
-    [busqueda, estado, requiereRevision, situacion, unidadesQuery.data],
-  )
+  const unidadesPagina = unidadesQuery.data?.results ?? []
+  const totalUnidades = unidadesQuery.data?.count ?? 0
+  const totalPaginasUnidades = Math.max(1, Math.ceil(totalUnidades / UNIDADES_PAGE_SIZE))
+  const indiceInicialUnidades = totalUnidades === 0 ? 0 : (unidadesPage - 1) * UNIDADES_PAGE_SIZE + 1
+  const indiceFinalUnidades = Math.min(unidadesPage * UNIDADES_PAGE_SIZE, totalUnidades)
+
+  useEffect(() => {
+    setUnidadesPage(1)
+  }, [busqueda, estado, requiereRevision, situacion])
+
+  useEffect(() => {
+    if (unidadesPage > totalPaginasUnidades) {
+      setUnidadesPage(totalPaginasUnidades)
+    }
+  }, [totalPaginasUnidades, unidadesPage])
 
   const isLoading = tiposEquipoQuery.isLoading || unidadesQuery.isLoading
   const errorMessage = tiposEquipoQuery.isError
@@ -353,7 +344,7 @@ export function Inventario() {
             </p>
           </div>
           <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-            Resultados: {formatearNumero(tiposEquipoFiltrados.length)} tipos · {formatearNumero(unidadesFiltradas.length)} unidades
+            Resultados: {formatearNumero(tiposEquipoFiltrados.length)} tipos · {formatearNumero(totalUnidades)} unidades
           </div>
         </div>
       </div>
@@ -527,11 +518,11 @@ export function Inventario() {
             <div>
               <h2 className="text-xl font-bold tracking-tight text-slate-950">Unidades</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {formatearNumero(unidadesFiltradas.length)} de {formatearNumero(unidadesQuery.data?.length ?? 0)} resultados
+                Página {formatearNumero(unidadesPage)} de {formatearNumero(totalPaginasUnidades)}
               </p>
             </div>
           </div>
-          {unidadesFiltradas.length === 0 ? (
+          {unidadesPagina.length === 0 ? (
             <div className="p-6"><EmptyState message="No hay unidades que coincidan con los filtros." /></div>
           ) : (
             <div className="overflow-x-auto">
@@ -549,7 +540,7 @@ export function Inventario() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {unidadesFiltradas.map((unidad) => (
+                  {unidadesPagina.map((unidad) => (
                     <tr key={unidad.id} className="align-top">
                       <td className="px-6 py-4 text-slate-500">#{unidad.id}</td>
                       <td className="px-6 py-4 font-semibold text-slate-950">{unidad.codigo_activo ?? `Unidad #${unidad.id}`}</td>
@@ -565,6 +556,34 @@ export function Inventario() {
               </table>
             </div>
           )}
+          {unidadesQuery.isSuccess ? (
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-slate-600" aria-live="polite">
+                {totalUnidades > 0
+                  ? `Mostrando ${formatearNumero(indiceInicialUnidades)}-${formatearNumero(indiceFinalUnidades)} de ${formatearNumero(totalUnidades)} unidades`
+                  : 'Sin unidades para esta búsqueda'}
+                {unidadesQuery.isFetching && !unidadesQuery.isLoading ? ' · Actualizando...' : ''}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                  disabled={unidadesPage <= 1 || unidadesQuery.isFetching}
+                  onClick={() => setUnidadesPage((prev) => Math.max(1, prev - 1))}
+                  type="button"
+                >
+                  Anterior
+                </button>
+                <button
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                  disabled={unidadesPage >= totalPaginasUnidades || unidadesQuery.isFetching}
+                  onClick={() => setUnidadesPage((prev) => Math.min(totalPaginasUnidades, prev + 1))}
+                  type="button"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          ) : null}
         </article>
       ) : null}
 

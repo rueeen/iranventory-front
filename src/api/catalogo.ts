@@ -1,30 +1,14 @@
 import { client } from './client'
-import type { ListParams, Paginated } from '../types/api'
+import { fetchAllPages, obtenerListaDesdeRespuesta, esRespuestaPaginada, type ListResponse } from './pagination'
+import type { ListParams } from '../types/api'
 import type { Asignatura, Carrera, Categoria, TipoEquipo, TipoEquipoInput, Ubicacion } from '../types/catalogo'
 
-export type RespuestaListaCatalogo<T> = Paginated<T> | T[]
+export { obtenerListaDesdeRespuesta, esRespuestaPaginada }
 
-export function esRespuestaPaginada<T>(
-  response: RespuestaListaCatalogo<T>,
-): response is Paginated<T> {
-  return !Array.isArray(response) && Array.isArray(response.results)
-}
-
-export function obtenerListaDesdeRespuesta<T>(response: RespuestaListaCatalogo<T>): T[] {
-  return esRespuestaPaginada(response) ? response.results : response
-}
-
-async function obtenerListaCatalogo<T>(
-  endpoint: string,
-  params?: ListParams,
-): Promise<RespuestaListaCatalogo<T>> {
-  const { data } = await client.get<RespuestaListaCatalogo<T>>(endpoint, { params })
-  return data
-}
+export type RespuestaListaCatalogo<T> = ListResponse<T>
 
 async function obtenerResultadosCatalogo<T>(endpoint: string, params?: ListParams): Promise<T[]> {
-  const response = await obtenerListaCatalogo<T>(endpoint, params)
-  return obtenerListaDesdeRespuesta(response)
+  return fetchAllPages<T>(endpoint, params)
 }
 
 export function obtenerCategorias(params?: ListParams): Promise<Categoria[]> {

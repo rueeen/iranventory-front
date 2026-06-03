@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
@@ -9,7 +9,7 @@ import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { calcularTotalesOrdenCompra, formatearCLP } from '../lib/moneda'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
-import { extractApiErrorMessage } from '../types/api'
+import { extractApiErrorMessage, type Paginated } from '../types/api'
 import type { TipoEquipo, Ubicacion } from '../types/catalogo'
 import type {
   EstadoOrdenCompra,
@@ -24,6 +24,7 @@ import type {
 } from '../types/compras'
 
 const estadosOrdenCompra: EstadoOrdenCompra[] = ['BORRADOR', 'EN_REVISION', 'ACEPTADA', 'RECHAZADA']
+const COMPRAS_PAGE_SIZE = 25
 
 type OrdenFormMode = { mode: 'create' } | { mode: 'edit'; orden: OrdenCompra }
 type ItemFormMode = { mode: 'create'; orden: OrdenCompra } | { mode: 'edit'; orden: OrdenCompra; item: ItemOrdenCompra }
@@ -124,34 +125,11 @@ function formatearTexto(valor: string | null | undefined, reemplazo = 'Sin infor
   return valor?.trim() ? valor : reemplazo
 }
 
-function normalizarTexto(valor: string): string {
-  return valor.toLocaleLowerCase('es-CL').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
+
 
 function proveedorLabel(proveedor: Proveedor | null | undefined): string {
   if (!proveedor) return 'Sin proveedor'
   return `${proveedor.razon_social} (${proveedor.rut})`
-}
-
-function ordenCoincideConBusqueda(orden: OrdenCompra, busqueda: string): boolean {
-  const termino = normalizarTexto(busqueda.trim())
-  if (!termino) return true
-
-  const valores = [
-    String(orden.id),
-    orden.numero,
-    proveedorLabel(orden.proveedor),
-    orden.numero_inacap,
-    orden.numero_documento,
-    orden.sede_destino,
-    orden.referencia_pedido,
-    orden.estado,
-    orden.fecha_documento ?? '',
-    orden.observaciones,
-    orden.items?.map((item) => `${item.tipo_equipo.nombre} ${item.codigo_material}`).join(' ') ?? '',
-  ]
-
-  return valores.some((valor) => normalizarTexto(valor).includes(termino))
 }
 
 function crearOrdenFormState(orden?: OrdenCompra): OrdenFormState {
@@ -610,15 +588,16 @@ export function Compras() {
   const [accionPendiente, setAccionPendiente] = useState<AccionPendiente | null>(null)
   const [observacionRechazo, setObservacionRechazo] = useState('')
   const [clientError, setClientError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
   const puedeGestionarCompras = tieneRol(usuario, ['PANOLERO', 'DIRECTOR'])
   const puedeResolverOrdenes = tieneRol(usuario, ['DIRECTOR'])
 
-  const filtros: ComprasFiltros = useMemo(() => ({ busqueda, estado }), [busqueda, estado])
+  const filtros: ComprasFiltros = useMemo(() => ({ busqueda, estado, page }), [busqueda, estado, page])
 
-  const ordenesCompraQuery = useQuery<OrdenCompra[], Error>({
+  const ordenesCompraQuery = useQuery<Paginated<OrdenCompra>, Error>({
     queryKey: queryKeys.ordenesCompra.list(filtros),
-    queryFn: () => comprasApi.obtenerOrdenesCompra(filtros),
+    queryFn: () => comprasApi.obtenerOrdenesCompraPaginadas(filtros),
   })
 
   const tiposEquipoQuery = useQuery<TipoEquipo[], Error>({
@@ -702,12 +681,21 @@ export function Compras() {
     },
   })
 
-  const ordenesFiltradas = useMemo(() => {
-    const ordenes = ordenesCompraQuery.data ?? []
-    return ordenes.filter(
-      (orden) => (!estado || orden.estado === estado) && ordenCoincideConBusqueda(orden, busqueda),
-    )
-  }, [busqueda, estado, ordenesCompraQuery.data])
+  const ordenesPagina = ordenesCompraQuery.data?.results ?? []
+  const totalOrdenes = ordenesCompraQuery.data?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(totalOrdenes / COMPRAS_PAGE_SIZE))
+  const indiceInicialPagina = totalOrdenes === 0 ? 0 : (page - 1) * COMPRAS_PAGE_SIZE + 1
+  const indiceFinalPagina = Math.min(page * COMPRAS_PAGE_SIZE, totalOrdenes)
+
+  useEffect(() => {
+    setPage(1)
+  }, [busqueda, estado])
+
+  useEffect(() => {
+    if (page > totalPaginas) {
+      setPage(totalPaginas)
+    }
+  }, [page, totalPaginas])
 
   const itemPreviewTotals = useMemo(() => {
     if (!itemFormMode) return null
@@ -829,7 +817,7 @@ export function Compras() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-medium text-slate-600">
-              {ordenesFiltradas.length} resultado{ordenesFiltradas.length === 1 ? '' : 's'}
+              {totalOrdenes} resultado{totalOrdenes === 1 ? '' : 's'}
             </p>
             {puedeGestionarCompras ? <PrimaryButton onClick={abrirCrearOrden}>Nueva orden</PrimaryButton> : null}
           </div>
@@ -873,7 +861,7 @@ export function Compras() {
       {errorMessage ? <ErrorPanel message={errorMessage} /> : null}
       {clientError && !ordenFormMode && !itemFormMode && !accionPendiente ? <ErrorPanel message={clientError} /> : null}
 
-      {ordenesCompraQuery.isSuccess && ordenesFiltradas.length === 0 ? (
+      {ordenesCompraQuery.isSuccess && ordenesPagina.length === 0 ? (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Sin resultados</p>
           <h2 className="mt-2 text-xl font-bold text-slate-950">No hay compras para mostrar</h2>
@@ -881,9 +869,40 @@ export function Compras() {
         </div>
       ) : null}
 
-      {ordenesCompraQuery.isSuccess && ordenesFiltradas.length > 0 ? (
+      {ordenesCompraQuery.isSuccess && ordenesPagina.length > 0 ? (
         <div className="space-y-4">
-          {ordenesFiltradas.map((orden) => (
+          <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">
+                Página {page} de {totalPaginas}
+              </p>
+              <p className="text-xs font-medium text-slate-500" aria-live="polite">
+                {totalOrdenes > 0
+                  ? `Mostrando ${indiceInicialPagina}-${indiceFinalPagina} de ${totalOrdenes} órdenes de compra`
+                  : 'Sin compras para esta búsqueda'}
+                {ordenesCompraQuery.isFetching && !ordenesCompraQuery.isLoading ? ' · Actualizando...' : ''}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                disabled={page <= 1 || ordenesCompraQuery.isFetching}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                type="button"
+              >
+                Anterior
+              </button>
+              <button
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                disabled={page >= totalPaginas || ordenesCompraQuery.isFetching}
+                onClick={() => setPage((prev) => Math.min(totalPaginas, prev + 1))}
+                type="button"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+          {ordenesPagina.map((orden) => (
             <OrdenCompraCard
               key={orden.id}
               orden={orden}
