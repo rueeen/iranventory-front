@@ -19,6 +19,7 @@ export const queryKeys = {
   unidades: resourceKeys('unidades'),
   ordenesCompra: resourceKeys('ordenesCompra'),
   itemsOrdenCompra: resourceKeys('itemsOrdenCompra'),
+  proveedores: resourceKeys('proveedores'),
   prestamos: resourceKeys('prestamos'),
   usuarios: resourceKeys('usuarios'),
   dashboard: {
