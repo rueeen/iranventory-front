@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
@@ -12,59 +12,32 @@ import {
 } from '../api/actions'
 import { catalogoApi } from '../api/catalogo'
 import { AsyncCombobox } from '../components/AsyncCombobox'
+import { PrestamoDetalleModal } from '../components/PrestamoDetalleModal'
 import { inventarioApi } from '../api/inventario'
 import { prestamosApi } from '../api/prestamos'
 import { useAuth, tieneRol } from '../features/auth/AuthContext'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
+import {
+  PRESTAMOS_PAGE_SIZE,
+  estadosPrestamo,
+  etiquetasCondicion,
+  etiquetasEstado,
+  estilosEstado,
+  formatearFecha,
+  obtenerUsernameSolicitante,
+  type AccionPrestamo,
+} from '../lib/prestamos'
 import { extractApiErrorMessage } from '../types/api'
 import type { TipoEquipo } from '../types/catalogo'
-import type { EstadoUnidad, Unidad } from '../types/inventario'
+import type { Unidad } from '../types/inventario'
 import type {
-  DetallePrestamo,
   EstadoPrestamo,
   Prestamo,
   PrestamoInput,
   RegistrarDevolucionItem,
 } from '../types/prestamos'
-
-const estadosPrestamo: EstadoPrestamo[] = [
-  'SOLICITADA',
-  'APROBADA',
-  'PREPARADA',
-  'ENTREGADA',
-  'DEVOLUCION',
-  'CERRADA',
-  'RECHAZADA',
-]
-
-const condicionesDevolucion: EstadoUnidad[] = ['BUENO', 'REPARABLE', 'MALO']
-
-const etiquetasEstado: Record<EstadoPrestamo, string> = {
-  SOLICITADA: 'Solicitada',
-  APROBADA: 'Aprobada',
-  PREPARADA: 'Preparada',
-  ENTREGADA: 'Entregada',
-  DEVOLUCION: 'Devolución',
-  CERRADA: 'Cerrada',
-  RECHAZADA: 'Rechazada',
-}
-
-const etiquetasCondicion: Record<EstadoUnidad, string> = {
-  BUENO: 'Bueno',
-  REPARABLE: 'Reparable',
-  MALO: 'Malo',
-}
-
-const estilosEstado: Record<EstadoPrestamo, string> = {
-  SOLICITADA: clasesInacap.chipInformacion,
-  APROBADA: clasesInacap.chipInformacion,
-  PREPARADA: clasesInacap.chipInformacion,
-  ENTREGADA: clasesInacap.chipAdvertencia,
-  DEVOLUCION: clasesInacap.chipAdvertencia,
-  CERRADA: clasesInacap.chipExito,
-  RECHAZADA: clasesInacap.chipError,
-}
 
 type SolicitudDetalleForm = {
   tipoEquipoId: string
@@ -82,18 +55,9 @@ type SolicitudFormState = {
   detalles: SolicitudDetalleForm[]
 }
 
-type AccionPrestamo = 'aprobar' | 'rechazar' | 'preparar' | 'entregar' | 'iniciar-devolucion' | 'cerrar'
-
 type AccionPendiente = {
   prestamoId: number
   accion: AccionPrestamo | 'registrar-devolucion'
-}
-
-type DevolucionFormItem = {
-  id: number
-  cantidadDevuelta: string
-  cantidadNoDevuelta: string
-  condicion: EstadoUnidad
 }
 
 const detalleVacio: SolicitudDetalleForm = {
@@ -112,67 +76,6 @@ function crearEstadoSolicitudInicial(): SolicitudFormState {
     observaciones: '',
     detalles: [{ ...detalleVacio }],
   }
-}
-
-function formatearFecha(fecha: string | null): string {
-  if (!fecha) {
-    return 'Sin fecha'
-  }
-
-  const date = new Date(fecha)
-
-  if (Number.isNaN(date.getTime())) {
-    return fecha
-  }
-
-  return new Intl.DateTimeFormat('es-CL', {
-    dateStyle: 'medium',
-    timeStyle: fecha.includes('T') ? 'short' : undefined,
-  }).format(date)
-}
-
-function formatearTexto(valor: string | null | undefined, fallback = 'Sin observaciones'): string {
-  return valor?.trim() ? valor : fallback
-}
-
-function obtenerNombreSolicitante(prestamo: Prestamo): string {
-  if (typeof prestamo.solicitante === 'number') {
-    return `Usuario #${prestamo.solicitante}`
-  }
-
-  const nombreCompleto = [prestamo.solicitante.first_name, prestamo.solicitante.last_name]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-
-  return nombreCompleto || prestamo.solicitante.username || `Usuario #${prestamo.solicitante.id}`
-}
-
-function normalizarTexto(valor: string): string {
-  return valor.toLocaleLowerCase('es-CL').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
-
-function prestamoCoincideConBusqueda(prestamo: Prestamo, busqueda: string): boolean {
-  const termino = normalizarTexto(busqueda.trim())
-
-  if (!termino) {
-    return true
-  }
-
-  const valores = [
-    String(prestamo.id),
-    obtenerNombreSolicitante(prestamo),
-    prestamo.estado,
-    prestamo.fecha_solicitud,
-    prestamo.fecha_requerida ?? '',
-    prestamo.fecha_devolucion_comprometida ?? '',
-    prestamo.observaciones,
-    prestamo.motivo_rechazo,
-    prestamo.asignatura?.nombre ?? '',
-    prestamo.detalles?.map((detalle) => detalle.tipo_equipo.nombre).join(' ') ?? '',
-  ]
-
-  return valores.some((valor) => normalizarTexto(valor).includes(termino))
 }
 
 function obtenerTipoEquipo(detalle: SolicitudDetalleForm): TipoEquipo | null {
@@ -262,47 +165,6 @@ function ErrorAlert({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#DC2626]">
       {message}
-    </div>
-  )
-}
-
-function DetallesPrestamo({ prestamo }: { prestamo: Prestamo }) {
-  if (!prestamo.detalles?.length) {
-    return <p className="text-sm text-slate-500">Sin detalles informados.</p>
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200">
-      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            <th className="px-4 py-3 font-semibold">Tipo de equipo</th>
-            <th className="px-4 py-3 font-semibold">Unidad</th>
-            <th className="px-4 py-3 font-semibold">Cantidad</th>
-            <th className="px-4 py-3 font-semibold">Devuelta</th>
-            <th className="px-4 py-3 font-semibold">No devuelta</th>
-            <th className="px-4 py-3 font-semibold">Condición</th>
-            <th className="px-4 py-3 font-semibold">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
-          {prestamo.detalles.map((detalle) => (
-            <tr key={detalle.id}>
-              <td className="px-4 py-3 font-medium text-slate-950">{detalle.tipo_equipo.nombre}</td>
-              <td className="px-4 py-3 text-slate-600">
-                {detalle.unidad?.codigo_activo ?? (detalle.unidad ? `Unidad #${detalle.unidad.id}` : 'Sin unidad')}
-              </td>
-              <td className="px-4 py-3 text-slate-600">{detalle.cantidad}</td>
-              <td className="px-4 py-3 text-slate-600">{detalle.cantidad_devuelta}</td>
-              <td className="px-4 py-3 text-slate-600">{detalle.cantidad_no_devuelta}</td>
-              <td className="px-4 py-3 text-slate-600">
-                {etiquetasCondicion[detalle.condicion_devolucion] ?? detalle.condicion_devolucion}
-              </td>
-              <td className="px-4 py-3 text-slate-600">{formatearTexto(detalle.observaciones)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )
 }
@@ -543,241 +405,14 @@ function SolicitudPrestamoForm({ unidades }: { unidades: Unidad[] }) {
   )
 }
 
-function DevolucionForm({
-  detalles,
-  disabled,
-  onSubmit,
-}: {
-  detalles: DetallePrestamo[]
-  disabled: boolean
-  onSubmit: (detalles: RegistrarDevolucionItem[]) => void
-}) {
-  const [items, setItems] = useState<DevolucionFormItem[]>(() =>
-    detalles.map((detalle) => ({
-      id: detalle.id,
-      cantidadDevuelta: String(detalle.cantidad_devuelta || detalle.cantidad),
-      cantidadNoDevuelta: String(detalle.cantidad_no_devuelta || 0),
-      condicion: detalle.condicion_devolucion || 'BUENO',
-    })),
-  )
-  const [error, setError] = useState<string | null>(null)
 
-  function actualizarItem(id: number, patch: Partial<DevolucionFormItem>) {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const payload = items.map((item) => ({
-      id: item.id,
-      cantidad_devuelta: Number(item.cantidadDevuelta),
-      cantidad_no_devuelta: Number(item.cantidadNoDevuelta),
-      condicion: item.condicion,
-    }))
-
-    if (payload.some((item) => !Number.isInteger(item.cantidad_devuelta) || !Number.isInteger(item.cantidad_no_devuelta) || item.cantidad_devuelta < 0 || item.cantidad_no_devuelta < 0)) {
-      setError('Ingresa cantidades devueltas y no devueltas válidas para todos los detalles.')
-      return
-    }
-
-    setError(null)
-
-    if (window.confirm('¿Registrar devolución con las cantidades y condiciones indicadas?')) {
-      onSubmit(payload)
-    }
-  }
-
+function EstadoBadge({ estado }: { estado: EstadoPrestamo }) {
   return (
-    <form className="mt-4 space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-4" onSubmit={handleSubmit}>
-      <div>
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-[#D97706]">Registrar devolución</h4>
-        <p className="mt-1 text-sm text-amber-900">Completa cantidades y condición final para cada detalle.</p>
-      </div>
-      {error ? <ErrorAlert message={error} /> : null}
-      <div className="space-y-3">
-        {detalles.map((detalle) => {
-          const item = items.find((candidate) => candidate.id === detalle.id)
-
-          if (!item) {
-            return null
-          }
-
-          return (
-            <div className="grid gap-3 rounded-2xl bg-white p-3 lg:grid-cols-[1fr_140px_160px_160px]" key={detalle.id}>
-              <div>
-                <p className="text-sm font-semibold text-slate-950">{detalle.tipo_equipo.nombre}</p>
-                <p className="text-xs text-slate-500">
-                  {detalle.unidad?.codigo_activo ?? (detalle.unidad ? `Unidad #${detalle.unidad.id}` : `Cantidad original: ${detalle.cantidad}`)}
-                </p>
-              </div>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Devuelta</span>
-                <input
-                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
-                  min="0"
-                  onChange={(event) => actualizarItem(detalle.id, { cantidadDevuelta: event.target.value })}
-                  type="number"
-                  value={item.cantidadDevuelta}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">No devuelta</span>
-                <input
-                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
-                  min="0"
-                  onChange={(event) => actualizarItem(detalle.id, { cantidadNoDevuelta: event.target.value })}
-                  type="number"
-                  value={item.cantidadNoDevuelta}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Condición</span>
-                <select
-                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
-                  onChange={(event) => actualizarItem(detalle.id, { condicion: event.target.value as EstadoUnidad })}
-                  value={item.condicion}
-                >
-                  {condicionesDevolucion.map((condicion) => (
-                    <option key={condicion} value={condicion}>
-                      {etiquetasCondicion[condicion]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )
-        })}
-      </div>
-      <button
-        className="rounded-2xl bg-[#D97706] px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={disabled}
-        type="submit"
-      >
-        Registrar devolución
-      </button>
-    </form>
-  )
-}
-
-function PrestamoCard({
-  prestamo,
-  puedeGestionar,
-  accionPendiente,
-  onAccion,
-  onRegistrarDevolucion,
-}: {
-  prestamo: Prestamo
-  puedeGestionar: boolean
-  accionPendiente: AccionPendiente | null
-  onAccion: (prestamo: Prestamo, accion: AccionPrestamo) => void
-  onRegistrarDevolucion: (prestamo: Prestamo, detalles: RegistrarDevolucionItem[]) => void
-}) {
-  const detalles = prestamo.detalles ?? []
-  const accionEnCurso = accionPendiente?.prestamoId === prestamo.id
-  const devolucionEnCurso = accionPendiente?.prestamoId === prestamo.id && accionPendiente.accion === 'registrar-devolucion'
-
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">
-            Préstamo #{prestamo.id}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-            {obtenerNombreSolicitante(prestamo)}
-          </h2>
-          <p className="mt-2 text-sm font-medium text-slate-600">
-            {prestamo.asignatura ? `Asignatura: ${prestamo.asignatura.nombre}` : 'Sin asignatura asociada'}
-          </p>
-        </div>
-        <EstadoBadge estado={prestamo.estado} />
-      </div>
-
-      <dl className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha solicitud</dt>
-          <dd className="mt-1 font-medium text-slate-950">{formatearFecha(prestamo.fecha_solicitud)}</dd>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha requerida</dt>
-          <dd className="mt-1 font-medium text-slate-950">{formatearFecha(prestamo.fecha_requerida)}</dd>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Devolución comprometida</dt>
-          <dd className="mt-1 font-medium text-slate-950">{formatearFecha(prestamo.fecha_devolucion_comprometida)}</dd>
-        </div>
-      </dl>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Observaciones</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{formatearTexto(prestamo.observaciones)}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Rechazo</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{formatearTexto(prestamo.motivo_rechazo, 'Sin motivo de rechazo')}</p>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Detalle del préstamo</h3>
-        <DetallesPrestamo prestamo={prestamo} />
-      </div>
-
-      {puedeGestionar ? (
-        <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-          {prestamo.estado === 'SOLICITADA' ? (
-            <>
-              <button
-                className="rounded-2xl bg-[#16A34A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={accionEnCurso}
-                onClick={() => onAccion(prestamo, 'aprobar')}
-                type="button"
-              >
-                Aprobar
-              </button>
-              <button
-                className="rounded-2xl bg-[#DC2626] px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={accionEnCurso}
-                onClick={() => onAccion(prestamo, 'rechazar')}
-                type="button"
-              >
-                Rechazar
-              </button>
-            </>
-          ) : null}
-          {prestamo.estado === 'APROBADA' ? (
-            <button className="rounded-2xl bg-[#2563EB] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'preparar')} type="button">
-              Preparar
-            </button>
-          ) : null}
-          {prestamo.estado === 'PREPARADA' ? (
-            <button className="rounded-2xl bg-[#2563EB] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'entregar')} type="button">
-              Entregar
-            </button>
-          ) : null}
-          {prestamo.estado === 'ENTREGADA' ? (
-            <button className="rounded-2xl bg-[#D97706] px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'iniciar-devolucion')} type="button">
-              Iniciar devolución
-            </button>
-          ) : null}
-          {prestamo.estado === 'DEVOLUCION' ? (
-            <button className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'cerrar')} type="button">
-              Cerrar préstamo
-            </button>
-          ) : null}
-          {accionEnCurso ? <span className="self-center text-sm font-medium text-slate-500">Procesando acción...</span> : null}
-        </div>
-      ) : null}
-
-      {puedeGestionar && prestamo.estado === 'DEVOLUCION' && detalles.length > 0 ? (
-        <DevolucionForm
-          detalles={detalles}
-          disabled={devolucionEnCurso}
-          onSubmit={(payload) => onRegistrarDevolucion(prestamo, payload)}
-        />
-      ) : null}
-    </article>
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${estilosEstado[estado]}`}
+    >
+      {etiquetasEstado[estado]}
+    </span>
   )
 }
 
@@ -788,15 +423,31 @@ export function Prestamos() {
   const queryClient = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
   const [estado, setEstado] = useState<EstadoPrestamo | ''>('')
+  const [page, setPage] = useState(1)
+  const [prestamoSeleccionadoId, setPrestamoSeleccionadoId] = useState<number | null>(null)
   const [accionPendiente, setAccionPendiente] = useState<AccionPendiente | null>(null)
   const [accionError, setAccionError] = useState<string | null>(null)
+  const busquedaDebounced = useDebouncedValue(busqueda, 300)
 
-  const filtros = useMemo(() => ({ busqueda, estado }), [busqueda, estado])
+  const filtros = useMemo(
+    () => ({ page, search: busquedaDebounced, estado }),
+    [busquedaDebounced, estado, page],
+  )
 
-  const prestamosQuery = useQuery<Prestamo[], Error>({
+  const prestamosQuery = useQuery({
     queryKey: queryKeys.prestamos.list(filtros),
     queryFn: () => prestamosApi.obtenerPrestamos(filtros),
   })
+
+  const prestamos = prestamosQuery.data?.results ?? []
+  const totalPrestamos = prestamosQuery.data?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(totalPrestamos / PRESTAMOS_PAGE_SIZE))
+
+  useEffect(() => {
+    if (page > totalPaginas) {
+      setPage(totalPaginas)
+    }
+  }, [page, totalPaginas])
 
   const unidadesQuery = useQuery({
     queryKey: queryKeys.unidades.list({ situacion: 'DISPONIBLE' }),
@@ -804,14 +455,24 @@ export function Prestamos() {
   })
 
   const accionMutation = useMutation({
-    mutationFn: async ({ prestamo, accion, detalles }: { prestamo: Prestamo; accion: AccionPrestamo | 'registrar-devolucion'; detalles?: RegistrarDevolucionItem[] }) => {
+    mutationFn: async ({
+      prestamo,
+      accion,
+      detalles,
+      motivoRechazo,
+    }: {
+      prestamo: Prestamo
+      accion: AccionPrestamo | 'registrar-devolucion'
+      detalles?: RegistrarDevolucionItem[]
+      motivoRechazo?: string
+    }) => {
       setAccionPendiente({ prestamoId: prestamo.id, accion })
 
       switch (accion) {
         case 'aprobar':
           return aprobarPrestamo(prestamo.id)
         case 'rechazar': {
-          const motivo = window.prompt(`Motivo de rechazo para préstamo #${prestamo.id}`)?.trim()
+          const motivo = motivoRechazo?.trim()
 
           if (!motivo) {
             throw new Error('El motivo de rechazo es obligatorio.')
@@ -831,28 +492,30 @@ export function Prestamos() {
           return cerrarPrestamo(prestamo.id)
       }
     },
-    onSuccess: () => {
+    onSuccess: (_prestamoActualizado, variables) => {
       setAccionError(null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.prestamos.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.prestamos.detail(variables.prestamo.id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.unidades.all })
     },
     onError: (mutationError) => setAccionError(extractApiErrorMessage(mutationError)),
     onSettled: () => setAccionPendiente(null),
   })
 
-  const prestamosFiltrados = useMemo(() => {
-    const prestamos = prestamosQuery.data ?? []
+  function actualizarBusqueda(valor: string) {
+    setBusqueda(valor)
+    setPage(1)
+  }
 
-    return prestamos.filter(
-      (prestamo) =>
-        (!estado || prestamo.estado === estado) && prestamoCoincideConBusqueda(prestamo, busqueda),
-    )
-  }, [busqueda, estado, prestamosQuery.data])
+  function actualizarEstado(valor: EstadoPrestamo | '') {
+    setEstado(valor)
+    setPage(1)
+  }
 
-  function ejecutarAccion(prestamo: Prestamo, accion: AccionPrestamo) {
+  function ejecutarAccion(prestamo: Prestamo, accion: AccionPrestamo, motivoRechazo?: string) {
     const mensajes: Record<AccionPrestamo, string> = {
       aprobar: `¿Aprobar el préstamo #${prestamo.id}?`,
-      rechazar: `¿Rechazar el préstamo #${prestamo.id}? Se solicitará un motivo.`,
+      rechazar: `¿Rechazar el préstamo #${prestamo.id}?`,
       preparar: `¿Marcar como preparado el préstamo #${prestamo.id}?`,
       entregar: `¿Entregar el préstamo #${prestamo.id}?`,
       'iniciar-devolucion': `¿Iniciar devolución del préstamo #${prestamo.id}?`,
@@ -860,7 +523,7 @@ export function Prestamos() {
     }
 
     if (window.confirm(mensajes[accion])) {
-      accionMutation.mutate({ prestamo, accion })
+      accionMutation.mutate({ prestamo, accion, motivoRechazo })
     }
   }
 
@@ -881,16 +544,12 @@ export function Prestamos() {
             </p>
           </div>
           <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-medium text-slate-600">
-            {prestamosFiltrados.length} resultado{prestamosFiltrados.length === 1 ? '' : 's'}
+            {totalPrestamos} resultado{totalPrestamos === 1 ? '' : 's'}
           </p>
         </div>
       </div>
 
-      {puedeCrearSolicitud ? (
-        <SolicitudPrestamoForm unidades={unidadesQuery.data ?? []} />
-      ) : null}
-
-      {accionError ? <ErrorAlert message={accionError} /> : null}
+      {puedeCrearSolicitud ? <SolicitudPrestamoForm unidades={unidadesQuery.data ?? []} /> : null}
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
@@ -898,8 +557,8 @@ export function Prestamos() {
             <span className="text-sm font-medium text-slate-700">Búsqueda por texto</span>
             <input
               className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${clasesInacap.focoMarca}`}
-              onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Buscar por ID, solicitante, fecha, observaciones, rechazo o detalle"
+              onChange={(event) => actualizarBusqueda(event.target.value)}
+              placeholder="Buscar por solicitante u observaciones"
               type="search"
               value={busqueda}
             />
@@ -909,7 +568,7 @@ export function Prestamos() {
             <span className="text-sm font-medium text-slate-700">Estado</span>
             <select
               className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
-              onChange={(event) => setEstado(event.target.value as EstadoPrestamo | '')}
+              onChange={(event) => actualizarEstado(event.target.value as EstadoPrestamo | '')}
               value={estado}
             >
               <option value="">Todos los estados</option>
@@ -923,46 +582,112 @@ export function Prestamos() {
         </div>
       </div>
 
-      {prestamosQuery.isLoading ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Cargando préstamos...</p>
-        </div>
-      ) : null}
+      {accionError ? <ErrorAlert message={accionError} /> : null}
 
-      {prestamosQuery.isError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-widest text-[#DC2626]">Error</p>
-          <h2 className="mt-2 text-xl font-bold text-red-950">No se pudieron cargar los préstamos</h2>
-          <p className="mt-2 text-sm leading-6 text-[#DC2626]">
-            {extractApiErrorMessage(prestamosQuery.error)}
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-5 py-4 font-semibold">#</th>
+                <th className="px-5 py-4 font-semibold">Solicitante</th>
+                <th className="px-5 py-4 font-semibold">Estado</th>
+                <th className="px-5 py-4 font-semibold">Fecha solicitud</th>
+                <th className="px-5 py-4 font-semibold">Ítems</th>
+                <th className="px-5 py-4 font-semibold">Acción</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {prestamosQuery.isLoading ? (
+                <tr>
+                  <td className="px-5 py-8 text-center text-sm font-medium text-slate-500" colSpan={6}>
+                    Cargando préstamos...
+                  </td>
+                </tr>
+              ) : null}
+
+              {prestamosQuery.isError ? (
+                <tr>
+                  <td className="px-5 py-8" colSpan={6}>
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+                      <p className="text-sm font-semibold uppercase tracking-widest text-[#DC2626]">Error</p>
+                      <h2 className="mt-2 text-xl font-bold text-red-950">No se pudieron cargar los préstamos</h2>
+                      <p className="mt-2 text-sm leading-6 text-[#DC2626]">
+                        {extractApiErrorMessage(prestamosQuery.error)}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+
+              {prestamosQuery.isSuccess && prestamos.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-10 text-center" colSpan={6}>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Sin resultados</p>
+                    <h2 className="mt-2 text-xl font-bold text-slate-950">No hay préstamos para mostrar</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Ajusta los filtros o crea una nueva solicitud de préstamo.
+                    </p>
+                  </td>
+                </tr>
+              ) : null}
+
+              {prestamos.map((prestamo) => (
+                <tr className="transition hover:bg-slate-50" key={prestamo.id}>
+                  <td className="px-5 py-4 font-semibold text-slate-950">#{prestamo.id}</td>
+                  <td className="px-5 py-4 text-slate-700">{obtenerUsernameSolicitante(prestamo)}</td>
+                  <td className="px-5 py-4"><EstadoBadge estado={prestamo.estado} /></td>
+                  <td className="px-5 py-4 text-slate-600">{formatearFecha(prestamo.fecha_solicitud)}</td>
+                  <td className="px-5 py-4 text-slate-600">{prestamo.detalles?.length ?? 0}</td>
+                  <td className="px-5 py-4">
+                    <button
+                      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${clasesInacap.botonPrimario}`}
+                      onClick={() => setPrestamoSeleccionadoId(prestamo.id)}
+                      type="button"
+                    >
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-slate-600">
+            Página {page} de {totalPaginas}
           </p>
+          <div className="flex gap-3">
+            <button
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+              disabled={page <= 1 || prestamosQuery.isLoading}
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              type="button"
+            >
+              Anterior
+            </button>
+            <button
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+              disabled={page >= totalPaginas || prestamosQuery.isLoading}
+              onClick={() => setPage((prev) => Math.min(totalPaginas, prev + 1))}
+              type="button"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
-      ) : null}
+      </div>
 
-      {prestamosQuery.isSuccess && prestamosFiltrados.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Sin resultados</p>
-          <h2 className="mt-2 text-xl font-bold text-slate-950">No hay préstamos para mostrar</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Ajusta los filtros o crea una nueva solicitud de préstamo.
-          </p>
-        </div>
-      ) : null}
-
-      {prestamosQuery.isSuccess && prestamosFiltrados.length > 0 ? (
-        <div className="space-y-4">
-          {prestamosFiltrados.map((prestamo) => (
-            <PrestamoCard
-              accionPendiente={accionPendiente}
-              key={prestamo.id}
-              onAccion={ejecutarAccion}
-              onRegistrarDevolucion={ejecutarRegistroDevolucion}
-              puedeGestionar={puedeGestionar}
-              prestamo={prestamo}
-            />
-          ))}
-        </div>
-      ) : null}
+      <PrestamoDetalleModal
+        accionError={accionError}
+        accionPendiente={accionPendiente}
+        onAccion={ejecutarAccion}
+        onClose={() => setPrestamoSeleccionadoId(null)}
+        onRegistrarDevolucion={ejecutarRegistroDevolucion}
+        puedeGestionar={puedeGestionar}
+        prestamoId={prestamoSeleccionadoId}
+      />
     </section>
   )
 }
