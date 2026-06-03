@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Home } from './pages/Home'
+import { Compras } from './pages/Compras'
 import { Login } from './pages/Login'
 import { ModulePlaceholder } from './pages/ModulePlaceholder'
 import { NotFound } from './pages/NotFound'
@@ -55,10 +56,7 @@ function App() {
           path="/compras"
           element={
             <ProtectedRoute roles={STAFF_ROLES}>
-              <ModulePlaceholder
-                description="Vista base para revisar necesidades de compra y seguimiento de adquisiciones."
-                title="Compras"
-              />
+              <Compras />
             </ProtectedRoute>
           }
         />

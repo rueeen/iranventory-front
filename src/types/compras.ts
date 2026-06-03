@@ -37,7 +37,7 @@ export type OrdenCompra = {
   updated_at: string
   es_editable: boolean
   tiene_items_pendientes: boolean
-  items: ItemOrdenCompra[]
+  items?: ItemOrdenCompra[]
 }
 
 export type OrdenCompraInput = {
