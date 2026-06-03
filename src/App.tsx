@@ -6,9 +6,9 @@ import { Home } from './pages/Home'
 import { Compras } from './pages/Compras'
 import { Login } from './pages/Login'
 import { Inventario } from './pages/Inventario'
-import { ModulePlaceholder } from './pages/ModulePlaceholder'
 import { NotFound } from './pages/NotFound'
 import { Prestamos } from './pages/Prestamos'
+import { Usuarios } from './pages/Usuarios'
 import type { Rol } from './types/auth'
 
 const ALL_ROLES: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
@@ -62,10 +62,7 @@ function App() {
           path="/usuarios"
           element={
             <ProtectedRoute roles={DIRECTOR_ROLES}>
-              <ModulePlaceholder
-                description="Vista base para la futura administración de usuarios y permisos del sistema."
-                title="Usuarios"
-              />
+              <Usuarios />
             </ProtectedRoute>
           }
         />
