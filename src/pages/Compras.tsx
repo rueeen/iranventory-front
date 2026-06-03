@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
+import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { AsyncCombobox } from '../components/AsyncCombobox'
 import { comprasApi, type ComprasFiltros } from '../api/compras'
 import { clasesInacap } from '../lib/theme'
@@ -361,6 +362,7 @@ function OrdenCompraCard({
   onDeleteItem,
   onEditItem,
   onEditOrder,
+  puedeResolverOrden,
 }: {
   orden: OrdenCompra
   tiposEquipo: TipoEquipo[]
@@ -369,10 +371,12 @@ function OrdenCompraCard({
   onDeleteItem: (item: ItemOrdenCompra) => void
   onEditItem: (orden: OrdenCompra, item: ItemOrdenCompra) => void
   onEditOrder: (orden: OrdenCompra) => void
+  puedeResolverOrden: boolean
 }) {
   const editable = puedeEditarOrden(orden)
   const puedeEnviar = editable && (orden.items?.length ?? 0) > 0
-  const puedeResolver = orden.estado === 'EN_REVISION'
+  const estaEnRevision = orden.estado === 'EN_REVISION'
+  const puedeResolver = estaEnRevision && puedeResolverOrden
 
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -390,6 +394,11 @@ function OrdenCompraCard({
             {puedeResolver ? <PrimaryButton onClick={() => onAction(orden, 'aceptar')}>Aceptar</PrimaryButton> : null}
             {puedeResolver ? <DangerButton onClick={() => onAction(orden, 'rechazar')}>Rechazar</DangerButton> : null}
           </div>
+          {estaEnRevision && !puedeResolverOrden ? (
+            <p className="max-w-xs rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 lg:text-right">
+              En revisión — pendiente de aprobación del director.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -422,6 +431,7 @@ function OrdenCompraCard({
 }
 
 export function Compras() {
+  const { usuario } = useAuth()
   const queryClient = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
   const [estado, setEstado] = useState<EstadoOrdenCompra | ''>('')
@@ -432,6 +442,8 @@ export function Compras() {
   const [accionPendiente, setAccionPendiente] = useState<AccionPendiente | null>(null)
   const [observacionRechazo, setObservacionRechazo] = useState('')
   const [clientError, setClientError] = useState<string | null>(null)
+
+  const puedeResolverOrdenes = tieneRol(usuario, ['DIRECTOR'])
 
   const filtros: ComprasFiltros = useMemo(() => ({ busqueda, estado }), [busqueda, estado])
 
@@ -571,6 +583,13 @@ export function Compras() {
   }
 
   const abrirAccion = (orden: OrdenCompra, accion: AccionFlujo) => {
+    setClientError(null)
+
+    if ((accion === 'aceptar' || accion === 'rechazar') && !puedeResolverOrdenes) {
+      setClientError('Solo el director puede aceptar o rechazar órdenes de compra.')
+      return
+    }
+
     setObservacionRechazo('')
     setAccionPendiente({ orden, accion })
   }
@@ -672,6 +691,7 @@ export function Compras() {
               onDeleteItem={eliminarItem}
               onEditItem={abrirEditarItem}
               onEditOrder={abrirEditarOrden}
+              puedeResolverOrden={puedeResolverOrdenes}
             />
           ))}
         </div>
