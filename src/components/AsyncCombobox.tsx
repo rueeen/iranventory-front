@@ -2,8 +2,8 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useCombobox } from 'downshift'
 
-import { clasesInacap } from '../lib/theme'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { clasesInacap } from '../lib/theme'
 
 type AsyncComboboxProps<TItem> = {
   value: number | null
@@ -31,12 +31,14 @@ export function AsyncCombobox<TItem>({
   const generatedId = useId()
   const inputId = id ?? generatedId
   const [inputValue, setInputValue] = useState('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(inputValue, 300)
 
   const optionsQuery = useQuery({
     queryKey: ['async-combobox', inputId, debouncedSearch],
     queryFn: () => fetchOptions(debouncedSearch),
-    enabled: false,
+    enabled: isMenuOpen && !disabled,
+    staleTime: 30_000,
   })
 
   const options = optionsQuery.data ?? []
@@ -60,10 +62,10 @@ export function AsyncCombobox<TItem>({
     openMenu,
   } = useCombobox<TItem>({
     inputId,
-    items: options,
-    itemToString: (item) => (item ? getOptionLabel(item) : ''),
-    selectedItem: resolvedSelectedItem,
     inputValue,
+    itemToString: (item) => (item ? getOptionLabel(item) : ''),
+    items: options,
+    selectedItem: resolvedSelectedItem,
     onInputValueChange: ({ inputValue: nextInputValue, type }) => {
       const nextValue = nextInputValue ?? ''
       setInputValue(nextValue)
@@ -78,9 +80,7 @@ export function AsyncCombobox<TItem>({
       }
     },
     onIsOpenChange: ({ isOpen: nextIsOpen }) => {
-      if (nextIsOpen) {
-        void optionsQuery.refetch()
-      }
+      setIsMenuOpen(nextIsOpen ?? false)
     },
     onSelectedItemChange: ({ selectedItem: nextSelectedItem }) => {
       if (!nextSelectedItem) return
@@ -91,21 +91,19 @@ export function AsyncCombobox<TItem>({
   })
 
   useEffect(() => {
-    if (value !== null && resolvedSelectedItem) {
-      const label = getOptionLabel(resolvedSelectedItem)
-      setInputValue(label)
+    if (value === null) {
+      setInputValue('')
+      return
+    }
+
+    if (resolvedSelectedItem) {
+      setInputValue(getOptionLabel(resolvedSelectedItem))
     }
   }, [getOptionLabel, resolvedSelectedItem, value])
 
-  useEffect(() => {
-    if (isOpen) {
-      void optionsQuery.refetch()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, isOpen])
-
   const showLoading = isOpen && optionsQuery.isFetching
   const showNoResults = isOpen && !optionsQuery.isFetching && options.length === 0
+  const showError = isOpen && optionsQuery.isError
 
   function clearSelection() {
     setInputValue('')
@@ -156,8 +154,11 @@ export function AsyncCombobox<TItem>({
         }`}
       >
         {showLoading ? <li className="px-4 py-3 text-slate-500">Buscando...</li> : null}
-        {showNoResults ? <li className="px-4 py-3 text-slate-500">Sin resultados</li> : null}
-        {isOpen && !showLoading
+        {showError ? (
+          <li className="px-4 py-3 text-[#DC2626]">No se pudieron cargar las opciones.</li>
+        ) : null}
+        {showNoResults && !showError ? <li className="px-4 py-3 text-slate-500">Sin resultados</li> : null}
+        {isOpen && !showLoading && !showError
           ? options.map((item, index) => {
               const optionId = getOptionId(item)
               const isSelected = optionId === value
