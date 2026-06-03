@@ -11,6 +11,7 @@ import {
   registrarDevolucion,
 } from '../api/actions'
 import { catalogoApi } from '../api/catalogo'
+import { AsyncCombobox } from '../components/AsyncCombobox'
 import { inventarioApi } from '../api/inventario'
 import { prestamosApi } from '../api/prestamos'
 import { useAuth, tieneRol } from '../features/auth/AuthContext'
@@ -67,6 +68,7 @@ const estilosEstado: Record<EstadoPrestamo, string> = {
 
 type SolicitudDetalleForm = {
   tipoEquipoId: string
+  tipoEquipo: TipoEquipo | null
   unidadId: string
   cantidad: string
   observaciones: string
@@ -96,6 +98,7 @@ type DevolucionFormItem = {
 
 const detalleVacio: SolicitudDetalleForm = {
   tipoEquipoId: '',
+  tipoEquipo: null,
   unidadId: '',
   cantidad: '1',
   observaciones: '',
@@ -172,9 +175,8 @@ function prestamoCoincideConBusqueda(prestamo: Prestamo, busqueda: string): bool
   return valores.some((valor) => normalizarTexto(valor).includes(termino))
 }
 
-function obtenerTipoEquipo(tipoEquipoId: string, tiposEquipo: TipoEquipo[]): TipoEquipo | null {
-  const id = Number(tipoEquipoId)
-  return tiposEquipo.find((tipo) => tipo.id === id) ?? null
+function obtenerTipoEquipo(detalle: SolicitudDetalleForm): TipoEquipo | null {
+  return detalle.tipoEquipo
 }
 
 function obtenerUnidadesDisponibles(detalle: SolicitudDetalleForm, unidades: Unidad[]): Unidad[] {
@@ -189,14 +191,14 @@ function obtenerUnidadesDisponibles(detalle: SolicitudDetalleForm, unidades: Uni
   )
 }
 
-function crearPayloadSolicitud(form: SolicitudFormState, tiposEquipo: TipoEquipo[]): PrestamoInput {
+function crearPayloadSolicitud(form: SolicitudFormState): PrestamoInput {
   return {
     asignatura_id: form.asignaturaId ? Number(form.asignaturaId) : null,
     fecha_requerida: form.fechaRequerida || null,
     fecha_devolucion_comprometida: form.fechaDevolucionComprometida || null,
     observaciones: form.observaciones.trim(),
     detalles: form.detalles.map((detalle) => {
-      const tipo = obtenerTipoEquipo(detalle.tipoEquipoId, tiposEquipo)
+      const tipo = obtenerTipoEquipo(detalle)
       const esSerie = tipo?.tipo_seguimiento === 'SERIE'
 
       return {
@@ -209,7 +211,7 @@ function crearPayloadSolicitud(form: SolicitudFormState, tiposEquipo: TipoEquipo
   }
 }
 
-function validarSolicitud(form: SolicitudFormState, tiposEquipo: TipoEquipo[]): string | null {
+function validarSolicitud(form: SolicitudFormState): string | null {
   if (!form.fechaRequerida) {
     return 'Ingresa la fecha requerida del préstamo.'
   }
@@ -224,7 +226,7 @@ function validarSolicitud(form: SolicitudFormState, tiposEquipo: TipoEquipo[]): 
 
   for (const [index, detalle] of form.detalles.entries()) {
     const numero = index + 1
-    const tipo = obtenerTipoEquipo(detalle.tipoEquipoId, tiposEquipo)
+    const tipo = obtenerTipoEquipo(detalle)
 
     if (!tipo) {
       return `Selecciona el tipo de equipo del detalle ${numero}.`
@@ -305,7 +307,7 @@ function DetallesPrestamo({ prestamo }: { prestamo: Prestamo }) {
   )
 }
 
-function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEquipo[]; unidades: Unidad[] }) {
+function SolicitudPrestamoForm({ unidades }: { unidades: Unidad[] }) {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<SolicitudFormState>(() => crearEstadoSolicitudInicial())
   const [error, setError] = useState<string | null>(null)
@@ -347,7 +349,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const validationError = validarSolicitud(form, tiposEquipo)
+    const validationError = validarSolicitud(form)
 
     if (validationError) {
       setError(validationError)
@@ -355,7 +357,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
     }
 
     setError(null)
-    crearMutation.mutate(crearPayloadSolicitud(form, tiposEquipo))
+    crearMutation.mutate(crearPayloadSolicitud(form))
   }
 
   return (
@@ -435,28 +437,43 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
         </div>
 
         {form.detalles.map((detalle, index) => {
-          const tipo = obtenerTipoEquipo(detalle.tipoEquipoId, tiposEquipo)
+          const tipo = obtenerTipoEquipo(detalle)
           const esSerie = tipo?.tipo_seguimiento === 'SERIE'
           const unidadesDisponibles = obtenerUnidadesDisponibles(detalle, unidades)
 
           return (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4" key={`detalle-${index}`}>
               <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr_120px]">
-                <label className="block">
-                  <span className="text-sm font-medium text-slate-700">Tipo de equipo</span>
-                  <select
-                    className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
-                    onChange={(event) => actualizarDetalle(index, { tipoEquipoId: event.target.value, unidadId: '', cantidad: '1' })}
-                    value={detalle.tipoEquipoId}
-                  >
-                    <option value="">Selecciona tipo</option>
-                    {tiposEquipo.map((tipoEquipo) => (
-                      <option key={tipoEquipo.id} value={tipoEquipo.id}>
-                        {tipoEquipo.nombre} · {tipoEquipo.tipo_seguimiento === 'SERIE' ? 'Serie' : `Granel (${tipoEquipo.stock_disponible} disp.)`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="block">
+                  <label className="text-sm font-medium text-slate-700" htmlFor={`tipo-equipo-prestamo-${index}`}>
+                    Tipo de equipo
+                  </label>
+                  <div className="mt-2">
+                    <AsyncCombobox<TipoEquipo>
+                      fetchOptions={catalogoApi.buscarTiposEquipo}
+                      getOptionId={(tipoEquipo) => tipoEquipo.id}
+                      getOptionLabel={(tipoEquipo) =>
+                        `${tipoEquipo.nombre} · ${
+                          tipoEquipo.tipo_seguimiento === 'SERIE'
+                            ? 'Serie'
+                            : `Granel (${tipoEquipo.stock_disponible} disp.)`
+                        }`
+                      }
+                      id={`tipo-equipo-prestamo-${index}`}
+                      onChange={(id, tipoEquipo) =>
+                        actualizarDetalle(index, {
+                          tipoEquipoId: id ? String(id) : '',
+                          tipoEquipo,
+                          unidadId: '',
+                          cantidad: '1',
+                        })
+                      }
+                      placeholder="Buscar tipo de equipo"
+                      selectedItem={detalle.tipoEquipo}
+                      value={detalle.tipoEquipoId ? Number(detalle.tipoEquipoId) : null}
+                    />
+                  </div>
+                </div>
 
                 {esSerie ? (
                   <label className="block">
@@ -781,11 +798,6 @@ export function Prestamos() {
     queryFn: () => prestamosApi.obtenerPrestamos(filtros),
   })
 
-  const tiposEquipoQuery = useQuery({
-    queryKey: queryKeys.tiposEquipo.list(),
-    queryFn: () => catalogoApi.obtenerTiposEquipo(),
-  })
-
   const unidadesQuery = useQuery({
     queryKey: queryKeys.unidades.list({ situacion: 'DISPONIBLE' }),
     queryFn: () => inventarioApi.obtenerUnidades({ situacion: 'DISPONIBLE' }),
@@ -875,7 +887,7 @@ export function Prestamos() {
       </div>
 
       {puedeCrearSolicitud ? (
-        <SolicitudPrestamoForm tiposEquipo={tiposEquipoQuery.data ?? []} unidades={unidadesQuery.data ?? []} />
+        <SolicitudPrestamoForm unidades={unidadesQuery.data ?? []} />
       ) : null}
 
       {accionError ? <ErrorAlert message={accionError} /> : null}
