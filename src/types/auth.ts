@@ -7,7 +7,7 @@ export type Usuario = {
   first_name: string
   last_name: string
   rol: Rol
-  rut: string
+  rut: string | null
 }
 
 export type TokenPair = {

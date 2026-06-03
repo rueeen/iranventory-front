@@ -58,9 +58,9 @@ export function useCreateMutation<TRead, TInput>(
   return useMutation<TRead, Error, TInput>({
     mutationFn: creator,
     ...options,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, context, mutation) => {
       await queryClient.invalidateQueries({ queryKey: listKey })
-      await options?.onSuccess?.(data, variables, context)
+      await options?.onSuccess?.(data, variables, context, mutation)
     },
   })
 }
@@ -75,9 +75,9 @@ export function useUpdateMutation<TRead, TInput>(
   return useMutation<TRead, Error, UpdateVariables<TInput>>({
     mutationFn: ({ id, payload }) => updater(id, payload),
     ...options,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, context, mutation) => {
       await queryClient.invalidateQueries({ queryKey: listKey })
-      await options?.onSuccess?.(data, variables, context)
+      await options?.onSuccess?.(data, variables, context, mutation)
     },
   })
 }
@@ -92,9 +92,9 @@ export function useDeleteMutation(
   return useMutation<void, Error, number>({
     mutationFn: remover,
     ...options,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, context, mutation) => {
       await queryClient.invalidateQueries({ queryKey: listKey })
-      await options?.onSuccess?.(data, variables, context)
+      await options?.onSuccess?.(data, variables, context, mutation)
     },
   })
 }
@@ -109,9 +109,9 @@ export function useActionMutation<TRead, TVariables>(
   return useMutation<TRead, Error, TVariables>({
     mutationFn: action,
     ...options,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, context, mutation) => {
       await queryClient.invalidateQueries({ queryKey: listKey })
-      await options?.onSuccess?.(data, variables, context)
+      await options?.onSuccess?.(data, variables, context, mutation)
     },
   })
 }
