@@ -1,6 +1,6 @@
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
-import type { Unidad } from '../types/inventario'
+import type { Unidad, UnidadInput } from '../types/inventario'
 import { obtenerListaDesdeRespuesta } from './catalogo'
 
 export type RespuestaListaInventario<T> = Paginated<T> | T[]
@@ -22,6 +22,18 @@ export function obtenerUnidades(params?: ListParams): Promise<Unidad[]> {
   return obtenerResultadosInventario<Unidad>('/api/unidades/', params)
 }
 
+export async function crearUnidad(input: UnidadInput): Promise<Unidad> {
+  const { data } = await client.post<Unidad>('/api/unidades/', input)
+  return data
+}
+
+export async function actualizarUnidad(id: number, input: UnidadInput): Promise<Unidad> {
+  const { data } = await client.put<Unidad>(`/api/unidades/${id}/`, input)
+  return data
+}
+
 export const inventarioApi = {
   obtenerUnidades,
+  crearUnidad,
+  actualizarUnidad,
 }
