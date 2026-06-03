@@ -1,5 +1,5 @@
 import { client } from './client'
-import { obtenerListaDesdeRespuesta } from './catalogo'
+import { fetchAllPages, obtenerPagina } from './pagination'
 import type { ListParams, Paginated } from '../types/api'
 import type { Usuario } from '../types/auth'
 import type { UsuarioInput } from '../types/usuarios'
@@ -7,9 +7,8 @@ import type { UsuarioInput } from '../types/usuarios'
 export type UsuariosFiltros = {
   busqueda?: string
   rol?: string
+  page?: number
 }
-
-type RespuestaListaUsuarios = Paginated<Usuario> | Usuario[]
 
 function construirParams(filtros?: UsuariosFiltros): ListParams {
   const params: ListParams = {}
@@ -23,15 +22,19 @@ function construirParams(filtros?: UsuariosFiltros): ListParams {
     params.rol = filtros.rol
   }
 
+  if (filtros?.page) {
+    params.page = filtros.page
+  }
+
   return params
 }
 
-export async function obtenerUsuarios(filtros?: UsuariosFiltros): Promise<Usuario[]> {
-  const { data } = await client.get<RespuestaListaUsuarios>('/api/usuarios/', {
-    params: construirParams(filtros),
-  })
+export function obtenerUsuarios(filtros?: UsuariosFiltros): Promise<Usuario[]> {
+  return fetchAllPages<Usuario>('/api/usuarios/', construirParams(filtros))
+}
 
-  return obtenerListaDesdeRespuesta(data)
+export function obtenerUsuariosPaginados(filtros?: UsuariosFiltros): Promise<Paginated<Usuario>> {
+  return obtenerPagina<Usuario>('/api/usuarios/', construirParams(filtros))
 }
 
 export async function actualizarUsuario(id: number, input: UsuarioInput): Promise<Usuario> {
@@ -41,5 +44,6 @@ export async function actualizarUsuario(id: number, input: UsuarioInput): Promis
 
 export const usuariosApi = {
   obtenerUsuarios,
+  obtenerUsuariosPaginados,
   actualizarUsuario,
 }

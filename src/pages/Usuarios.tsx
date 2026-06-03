@@ -1,15 +1,16 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { usuariosApi, type UsuariosFiltros } from '../api/usuarios'
 import { useAuth } from '../features/auth/AuthContext'
 import { clasesInacap } from '../lib/theme'
 import { queryKeys } from '../lib/queryKeys'
-import { extractApiErrorMessage, extractFieldErrors } from '../types/api'
+import { extractApiErrorMessage, extractFieldErrors, type Paginated } from '../types/api'
 import type { Rol, Usuario } from '../types/auth'
 import type { UsuarioInput } from '../types/usuarios'
 
 const roles: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
+const USUARIOS_PAGE_SIZE = 25
 
 const etiquetasRol: Record<Rol, string> = {
   ALUMNO: 'Alumno',
@@ -33,9 +34,6 @@ type UsuarioFormState = {
   rut: string
 }
 
-function normalizarTexto(valor: string): string {
-  return valor.toLocaleLowerCase('es-CL').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
 
 function formatearTexto(valor: string | null | undefined, reemplazo = 'Sin información'): string {
   return valor?.trim() ? valor : reemplazo
@@ -66,26 +64,6 @@ function construirUsuarioInput(state: UsuarioFormState): UsuarioInput {
     rol: state.rol,
     rut: rut ? rut : null,
   }
-}
-
-function usuarioCoincideConBusqueda(usuario: Usuario, busqueda: string): boolean {
-  const termino = normalizarTexto(busqueda.trim())
-
-  if (!termino) {
-    return true
-  }
-
-  const valores = [
-    String(usuario.id),
-    usuario.username,
-    usuario.email,
-    usuario.first_name,
-    usuario.last_name,
-    usuario.rol,
-    usuario.rut ?? '',
-  ]
-
-  return valores.some((valor) => normalizarTexto(valor).includes(termino))
 }
 
 function RolBadge({ rol }: { rol: Rol }) {
@@ -165,13 +143,14 @@ export function Usuarios() {
   const [rol, setRol] = useState<Rol | ''>('')
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
   const [form, setForm] = useState<UsuarioFormState | null>(null)
+  const [page, setPage] = useState(1)
 
   const canEdit = usuario?.rol === 'DIRECTOR'
-  const filtros: UsuariosFiltros = { busqueda, rol }
+  const filtros: UsuariosFiltros = { busqueda, rol, page }
 
-  const usuariosQuery = useQuery<Usuario[], Error>({
+  const usuariosQuery = useQuery<Paginated<Usuario>, Error>({
     queryKey: queryKeys.usuarios.list(filtros),
-    queryFn: () => usuariosApi.obtenerUsuarios(filtros),
+    queryFn: () => usuariosApi.obtenerUsuariosPaginados(filtros),
   })
 
   const actualizarUsuarioMutation = useMutation({
@@ -183,13 +162,21 @@ export function Usuarios() {
     },
   })
 
-  const usuariosFiltrados = useMemo(() => {
-    const usuarios = usuariosQuery.data ?? []
+  const usuariosPagina = usuariosQuery.data?.results ?? []
+  const totalUsuarios = usuariosQuery.data?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(totalUsuarios / USUARIOS_PAGE_SIZE))
+  const indiceInicialPagina = totalUsuarios === 0 ? 0 : (page - 1) * USUARIOS_PAGE_SIZE + 1
+  const indiceFinalPagina = Math.min(page * USUARIOS_PAGE_SIZE, totalUsuarios)
 
-    return usuarios.filter(
-      (usuarioItem) => (!rol || usuarioItem.rol === rol) && usuarioCoincideConBusqueda(usuarioItem, busqueda),
-    )
-  }, [busqueda, rol, usuariosQuery.data])
+  useEffect(() => {
+    setPage(1)
+  }, [busqueda, rol])
+
+  useEffect(() => {
+    if (page > totalPaginas) {
+      setPage(totalPaginas)
+    }
+  }, [page, totalPaginas])
 
   const abrirEdicion = (usuarioSeleccionado: Usuario) => {
     setUsuarioEditando(usuarioSeleccionado)
@@ -240,7 +227,7 @@ export function Usuarios() {
             </p>
           </div>
           <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-medium text-slate-600">
-            {usuariosFiltrados.length} resultado{usuariosFiltrados.length === 1 ? '' : 's'}
+            {totalUsuarios} resultado{totalUsuarios === 1 ? '' : 's'}
           </p>
         </div>
       </div>
@@ -290,7 +277,7 @@ export function Usuarios() {
         </div>
       ) : null}
 
-      {usuariosQuery.isSuccess && usuariosFiltrados.length === 0 ? (
+      {usuariosQuery.isSuccess && usuariosPagina.length === 0 ? (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Sin resultados</p>
           <h2 className="mt-2 text-xl font-bold text-slate-950">No hay usuarios para mostrar</h2>
@@ -300,8 +287,41 @@ export function Usuarios() {
         </div>
       ) : null}
 
-      {usuariosQuery.isSuccess && usuariosFiltrados.length > 0 ? (
-        <UsuariosTable canEdit={canEdit} onEdit={abrirEdicion} usuarios={usuariosFiltrados} />
+      {usuariosQuery.isSuccess && usuariosPagina.length > 0 ? (
+        <div className="space-y-4">
+          <UsuariosTable canEdit={canEdit} onEdit={abrirEdicion} usuarios={usuariosPagina} />
+          <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">
+                Página {page} de {totalPaginas}
+              </p>
+              <p className="text-xs font-medium text-slate-500" aria-live="polite">
+                {totalUsuarios > 0
+                  ? `Mostrando ${indiceInicialPagina}-${indiceFinalPagina} de ${totalUsuarios} usuarios`
+                  : 'Sin usuarios para esta búsqueda'}
+                {usuariosQuery.isFetching && !usuariosQuery.isLoading ? ' · Actualizando...' : ''}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                disabled={page <= 1 || usuariosQuery.isFetching}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                type="button"
+              >
+                Anterior
+              </button>
+              <button
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${clasesInacap.botonSecundario}`}
+                disabled={page >= totalPaginas || usuariosQuery.isFetching}
+                onClick={() => setPage((prev) => Math.min(totalPaginas, prev + 1))}
+                type="button"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {usuarioEditando && form ? (

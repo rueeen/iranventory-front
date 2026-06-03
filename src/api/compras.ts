@@ -1,4 +1,5 @@
 import { client } from './client'
+import { fetchAllPages, obtenerPagina } from './pagination'
 import type { ListParams, Paginated } from '../types/api'
 import type {
   AccionRechazarOrdenCompraInput,
@@ -13,17 +14,7 @@ import type {
 export type ComprasFiltros = {
   busqueda?: string
   estado?: EstadoOrdenCompra | ''
-}
-
-type RespuestaListaOrdenesCompra = Paginated<OrdenCompra> | OrdenCompra[]
-type RespuestaListaItemsOrdenCompra = Paginated<ItemOrdenCompra> | ItemOrdenCompra[]
-
-function esRespuestaPaginada<T>(response: Paginated<T> | T[]): response is Paginated<T> {
-  return !Array.isArray(response) && Array.isArray(response.results)
-}
-
-function obtenerResultados<T>(response: Paginated<T> | T[]): T[] {
-  return esRespuestaPaginada(response) ? response.results : response
+  page?: number
 }
 
 function construirParams(filtros?: ComprasFiltros): ListParams {
@@ -38,15 +29,19 @@ function construirParams(filtros?: ComprasFiltros): ListParams {
     params.estado = filtros.estado
   }
 
+  if (filtros?.page) {
+    params.page = filtros.page
+  }
+
   return params
 }
 
-export async function obtenerOrdenesCompra(filtros?: ComprasFiltros): Promise<OrdenCompra[]> {
-  const { data } = await client.get<RespuestaListaOrdenesCompra>('/api/ordenes-compra/', {
-    params: construirParams(filtros),
-  })
+export function obtenerOrdenesCompra(filtros?: ComprasFiltros): Promise<OrdenCompra[]> {
+  return fetchAllPages<OrdenCompra>('/api/ordenes-compra/', construirParams(filtros))
+}
 
-  return obtenerResultados(data)
+export function obtenerOrdenesCompraPaginadas(filtros?: ComprasFiltros): Promise<Paginated<OrdenCompra>> {
+  return obtenerPagina<OrdenCompra>('/api/ordenes-compra/', construirParams(filtros))
 }
 
 export async function crearOrdenCompra(input: OrdenCompraInput): Promise<OrdenCompra> {
@@ -66,8 +61,7 @@ export async function obtenerItemsOrdenCompra(ordenCompraId?: number): Promise<I
     params.orden_compra = ordenCompraId
   }
 
-  const { data } = await client.get<RespuestaListaItemsOrdenCompra>('/api/items-orden-compra/', { params })
-  return obtenerResultados(data)
+  return fetchAllPages<ItemOrdenCompra>('/api/items-orden-compra/', params)
 }
 
 export async function crearItemOrdenCompra(input: ItemOrdenCompraCreateInput): Promise<ItemOrdenCompra> {
@@ -107,6 +101,7 @@ export async function rechazarOrdenCompra(
 
 export const comprasApi = {
   obtenerOrdenesCompra,
+  obtenerOrdenesCompraPaginadas,
   crearOrdenCompra,
   actualizarOrdenCompra,
   obtenerItemsOrdenCompra,
