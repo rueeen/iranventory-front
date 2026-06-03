@@ -1,6 +1,6 @@
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
-import type { EstadoPrestamo, Prestamo } from '../types/prestamos'
+import type { EstadoPrestamo, Prestamo, PrestamoInput } from '../types/prestamos'
 
 export type PrestamosFiltros = {
   busqueda?: string
@@ -40,6 +40,18 @@ export async function obtenerPrestamos(filtros?: PrestamosFiltros): Promise<Pres
   return obtenerResultadosPrestamos(data)
 }
 
+export async function obtenerPrestamo(id: number): Promise<Prestamo> {
+  const { data } = await client.get<Prestamo>(`/api/prestamos/${id}/`)
+  return data
+}
+
+export async function crearPrestamo(input: PrestamoInput): Promise<Prestamo> {
+  const { data } = await client.post<Prestamo>('/api/prestamos/', input)
+  return data
+}
+
 export const prestamosApi = {
   obtenerPrestamos,
+  obtenerPrestamo,
+  crearPrestamo,
 }

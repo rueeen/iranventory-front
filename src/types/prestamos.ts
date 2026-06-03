@@ -58,5 +58,5 @@ export type RegistrarDevolucionItem = {
   id: number
   cantidad_devuelta: number
   cantidad_no_devuelta: number
-  condicion?: EstadoUnidad
+  condicion: EstadoUnidad
 }
