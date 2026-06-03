@@ -1,6 +1,6 @@
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
-import type { Asignatura, Carrera, Categoria, TipoEquipo, Ubicacion } from '../types/catalogo'
+import type { Asignatura, Carrera, Categoria, TipoEquipo, TipoEquipoInput, Ubicacion } from '../types/catalogo'
 
 export type RespuestaListaCatalogo<T> = Paginated<T> | T[]
 
@@ -47,10 +47,22 @@ export function obtenerTiposEquipo(params?: ListParams): Promise<TipoEquipo[]> {
   return obtenerResultadosCatalogo<TipoEquipo>('/api/tipos-equipo/', params)
 }
 
+export async function crearTipoEquipo(input: TipoEquipoInput): Promise<TipoEquipo> {
+  const { data } = await client.post<TipoEquipo>('/api/tipos-equipo/', input)
+  return data
+}
+
+export async function actualizarTipoEquipo(id: number, input: TipoEquipoInput): Promise<TipoEquipo> {
+  const { data } = await client.put<TipoEquipo>(`/api/tipos-equipo/${id}/`, input)
+  return data
+}
+
 export const catalogoApi = {
   obtenerCategorias,
   obtenerCarreras,
   obtenerAsignaturas,
   obtenerUbicaciones,
   obtenerTiposEquipo,
+  crearTipoEquipo,
+  actualizarTipoEquipo,
 }
