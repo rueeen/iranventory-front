@@ -10,7 +10,7 @@ export function AppLayout() {
 
       <div className="flex min-h-screen flex-1 flex-col">
         <Header />
-        <main className="flex-1 px-6 py-8">
+        <main className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(227,6,19,0.08),transparent_28rem)] px-6 py-8">
           <div className="mx-auto max-w-6xl">
             <Outlet />
           </div>

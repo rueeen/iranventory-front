@@ -20,9 +20,9 @@ const etiquetasRol: Record<Rol, string> = {
 
 const estilosRol: Record<Rol, string> = {
   ALUMNO: 'bg-slate-100 text-slate-700 ring-slate-200',
-  DOCENTE: 'bg-blue-50 text-blue-700 ring-blue-200',
-  PANOLERO: 'bg-amber-50 text-amber-700 ring-amber-200',
-  DIRECTOR: 'bg-red-50 text-red-700 ring-red-200',
+  DOCENTE: clasesInacap.chipInformacion,
+  PANOLERO: clasesInacap.chipAdvertencia,
+  DIRECTOR: clasesInacap.chipError,
 }
 
 type UsuarioFormState = {
@@ -101,7 +101,7 @@ function FieldError({ messages }: { messages?: string[] }) {
     return null
   }
 
-  return <p className="mt-1 text-xs font-medium text-red-600">{messages.join(' ')}</p>
+  return <p className="mt-1 text-xs font-medium text-[#DC2626]">{messages.join(' ')}</p>
 }
 
 function UsuariosTable({
@@ -142,7 +142,7 @@ function UsuariosTable({
               {canEdit ? (
                 <td className="px-4 py-4 text-right">
                   <button
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 ${clasesInacap.fondoMarca}`}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${clasesInacap.botonPrimario}`}
                     onClick={() => onEdit(usuario)}
                     type="button"
                   >
@@ -228,8 +228,9 @@ export function Usuarios() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Usuarios</p>
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="absolute left-0 top-0 h-1 w-full bg-[#E30613]" />
+        <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Usuarios</p>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Administración de usuarios</h1>
@@ -282,10 +283,10 @@ export function Usuarios() {
       ) : null}
 
       {usuariosQuery.isError ? (
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">Error</p>
-          <h2 className="mt-2 text-xl font-bold text-rose-950">No se pudieron cargar los usuarios</h2>
-          <p className="mt-2 text-sm leading-6 text-rose-800">{queryErrorMessage}</p>
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#DC2626]">Error</p>
+          <h2 className="mt-2 text-xl font-bold text-red-950">No se pudieron cargar los usuarios</h2>
+          <p className="mt-2 text-sm leading-6 text-[#DC2626]">{queryErrorMessage}</p>
         </div>
       ) : null}
 
@@ -308,12 +309,12 @@ export function Usuarios() {
           <div className="max-h-full w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Editar usuario</p>
+                <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">Editar usuario</p>
                 <h2 className="mt-1 text-2xl font-bold text-slate-950">{usuarioEditando.username}</h2>
                 <p className="mt-1 text-sm text-slate-500">La contraseña no se muestra ni se edita desde esta vista.</p>
               </div>
               <button
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${clasesInacap.botonSecundario}`}
                 disabled={actualizarUsuarioMutation.isPending}
                 onClick={cerrarEdicion}
                 type="button"
@@ -324,7 +325,7 @@ export function Usuarios() {
 
             <form className="mt-6 space-y-5" onSubmit={guardarUsuario}>
               {mutationErrorMessage ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-[#DC2626]">
                   {mutationErrorMessage}
                 </div>
               ) : null}
@@ -406,7 +407,7 @@ export function Usuarios() {
                   Cancelar
                 </button>
                 <button
-                  className={`rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70 ${clasesInacap.fondoMarca}`}
+                  className={`rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${clasesInacap.botonPrimario}`}
                   disabled={actualizarUsuarioMutation.isPending}
                   type="submit"
                 >

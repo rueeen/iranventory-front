@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { dashboardApi, type DashboardTotal } from '../api/dashboard'
 import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { queryKeys } from '../lib/queryKeys'
+import { clasesInacap } from '../lib/theme'
 import type { Rol } from '../types/auth'
 
 type DashboardMetric = {
@@ -55,7 +56,8 @@ function MetricCard({ description, query, title }: DashboardMetric) {
   const isEmpty = query.data?.total === 0
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="absolute left-0 top-0 h-full w-1 bg-[#E30613]" />
       <p className="text-sm font-medium text-slate-500">{title}</p>
 
       {query.isLoading ? (
@@ -125,8 +127,9 @@ export function Home() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">Dashboard</p>
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="absolute left-0 top-0 h-1 w-full bg-[#E30613]" />
+        <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Dashboard</p>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Inicio</h1>
@@ -151,7 +154,7 @@ export function Home() {
           </div>
           <div>
             <p className="text-sm text-slate-500">Rol</p>
-            <p className="mt-1 text-xl font-semibold text-[#E30613]">
+            <p className={`mt-1 text-xl font-semibold ${clasesInacap.textoMarca}`}>
               {usuario ? roleLabels[usuario.rol] : 'Rol no disponible'}
             </p>
           </div>

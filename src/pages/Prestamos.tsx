@@ -15,6 +15,7 @@ import { inventarioApi } from '../api/inventario'
 import { prestamosApi } from '../api/prestamos'
 import { useAuth, tieneRol } from '../features/auth/AuthContext'
 import { queryKeys } from '../lib/queryKeys'
+import { clasesInacap } from '../lib/theme'
 import { extractApiErrorMessage } from '../types/api'
 import type { TipoEquipo } from '../types/catalogo'
 import type { EstadoUnidad, Unidad } from '../types/inventario'
@@ -55,13 +56,13 @@ const etiquetasCondicion: Record<EstadoUnidad, string> = {
 }
 
 const estilosEstado: Record<EstadoPrestamo, string> = {
-  SOLICITADA: 'bg-sky-50 text-sky-700 ring-sky-200',
-  APROBADA: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-  PREPARADA: 'bg-violet-50 text-violet-700 ring-violet-200',
-  ENTREGADA: 'bg-amber-50 text-amber-700 ring-amber-200',
-  DEVOLUCION: 'bg-orange-50 text-orange-700 ring-orange-200',
-  CERRADA: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  RECHAZADA: 'bg-rose-50 text-rose-700 ring-rose-200',
+  SOLICITADA: clasesInacap.chipInformacion,
+  APROBADA: clasesInacap.chipInformacion,
+  PREPARADA: clasesInacap.chipInformacion,
+  ENTREGADA: clasesInacap.chipAdvertencia,
+  DEVOLUCION: clasesInacap.chipAdvertencia,
+  CERRADA: clasesInacap.chipExito,
+  RECHAZADA: clasesInacap.chipError,
 }
 
 type SolicitudDetalleForm = {
@@ -257,7 +258,7 @@ function EstadoBadge({ estado }: { estado: EstadoPrestamo }) {
 
 function ErrorAlert({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#DC2626]">
       {message}
     </div>
   )
@@ -360,7 +361,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
   return (
     <form className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
       <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Nueva solicitud</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">Nueva solicitud</p>
         <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">Crear préstamo</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Alumnos y docentes pueden solicitar equipos por serie o granel. Las unidades seriadas se eligen desde el stock disponible.
@@ -369,7 +370,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
 
       {error ? <ErrorAlert message={error} /> : null}
       {crearMutation.isSuccess ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-[#16A34A]">
           Solicitud creada correctamente.
         </div>
       ) : null}
@@ -378,7 +379,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Fecha requerida</span>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
             onChange={(event) => setForm((prev) => ({ ...prev, fechaRequerida: event.target.value }))}
             type="date"
             value={form.fechaRequerida}
@@ -387,7 +388,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Devolución comprometida</span>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
             onChange={(event) => setForm((prev) => ({ ...prev, fechaDevolucionComprometida: event.target.value }))}
             type="date"
             value={form.fechaDevolucionComprometida}
@@ -396,7 +397,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Asignatura</span>
           <select
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
             disabled={asignaturasQuery.isLoading}
             onChange={(event) => setForm((prev) => ({ ...prev, asignaturaId: event.target.value }))}
             value={form.asignaturaId}
@@ -414,7 +415,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
       <label className="block">
         <span className="text-sm font-medium text-slate-700">Observaciones</span>
         <textarea
-          className="mt-2 min-h-24 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+          className={`mt-2 min-h-24 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${clasesInacap.focoMarca}`}
           onChange={(event) => setForm((prev) => ({ ...prev, observaciones: event.target.value }))}
           placeholder="Indica contexto, laboratorio, sección u otra información relevante."
           value={form.observaciones}
@@ -425,7 +426,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Detalles</h3>
           <button
-            className="rounded-2xl border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+            className="rounded-2xl border border-[#E30613]/30 px-4 py-2 text-sm font-semibold text-[#E30613] transition hover:bg-red-50"
             onClick={agregarDetalle}
             type="button"
           >
@@ -444,7 +445,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">Tipo de equipo</span>
                   <select
-                    className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                    className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
                     onChange={(event) => actualizarDetalle(index, { tipoEquipoId: event.target.value, unidadId: '', cantidad: '1' })}
                     value={detalle.tipoEquipoId}
                   >
@@ -461,7 +462,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">Unidad disponible</span>
                     <select
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
                       onChange={(event) => actualizarDetalle(index, { unidadId: event.target.value })}
                       value={detalle.unidadId}
                     >
@@ -477,7 +478,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">Cantidad</span>
                     <input
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
                       min="1"
                       onChange={(event) => actualizarDetalle(index, { cantidad: event.target.value })}
                       type="number"
@@ -488,7 +489,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
 
                 <div className="flex items-end">
                   <button
-                    className="w-full rounded-2xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-2xl border border-red-200 px-4 py-3 text-sm font-semibold text-[#DC2626] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={form.detalles.length === 1}
                     onClick={() => quitarDetalle(index)}
                     type="button"
@@ -501,7 +502,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
               <label className="mt-4 block">
                 <span className="text-sm font-medium text-slate-700">Observaciones del detalle</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${clasesInacap.focoMarca}`}
                   onChange={(event) => actualizarDetalle(index, { observaciones: event.target.value })}
                   placeholder="Accesorios requeridos, uso esperado u otra nota."
                   value={detalle.observaciones}
@@ -514,7 +515,7 @@ function SolicitudPrestamoForm({ tiposEquipo, unidades }: { tiposEquipo: TipoEqu
 
       <div className="flex justify-end">
         <button
-          className="rounded-2xl bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-2xl bg-[#E30613] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#C90010] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={crearMutation.isPending}
           type="submit"
         >
@@ -570,10 +571,10 @@ function DevolucionForm({
   }
 
   return (
-    <form className="mt-4 space-y-4 rounded-2xl border border-orange-200 bg-orange-50 p-4" onSubmit={handleSubmit}>
+    <form className="mt-4 space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-4" onSubmit={handleSubmit}>
       <div>
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-orange-800">Registrar devolución</h4>
-        <p className="mt-1 text-sm text-orange-900">Completa cantidades y condición final para cada detalle.</p>
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-[#D97706]">Registrar devolución</h4>
+        <p className="mt-1 text-sm text-amber-900">Completa cantidades y condición final para cada detalle.</p>
       </div>
       {error ? <ErrorAlert message={error} /> : null}
       <div className="space-y-3">
@@ -595,7 +596,7 @@ function DevolucionForm({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Devuelta</span>
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
                   min="0"
                   onChange={(event) => actualizarItem(detalle.id, { cantidadDevuelta: event.target.value })}
                   type="number"
@@ -605,7 +606,7 @@ function DevolucionForm({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">No devuelta</span>
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
                   min="0"
                   onChange={(event) => actualizarItem(detalle.id, { cantidadNoDevuelta: event.target.value })}
                   type="number"
@@ -615,7 +616,7 @@ function DevolucionForm({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Condición</span>
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-4 ${clasesInacap.focoMarca}`}
                   onChange={(event) => actualizarItem(detalle.id, { condicion: event.target.value as EstadoUnidad })}
                   value={item.condicion}
                 >
@@ -631,7 +632,7 @@ function DevolucionForm({
         })}
       </div>
       <button
-        className="rounded-2xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-2xl bg-[#D97706] px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
         type="submit"
       >
@@ -662,7 +663,7 @@ function PrestamoCard({
     <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">
             Préstamo #{prestamo.id}
           </p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
@@ -711,7 +712,7 @@ function PrestamoCard({
           {prestamo.estado === 'SOLICITADA' ? (
             <>
               <button
-                className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-[#16A34A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={accionEnCurso}
                 onClick={() => onAccion(prestamo, 'aprobar')}
                 type="button"
@@ -719,7 +720,7 @@ function PrestamoCard({
                 Aprobar
               </button>
               <button
-                className="rounded-2xl bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-[#DC2626] px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={accionEnCurso}
                 onClick={() => onAccion(prestamo, 'rechazar')}
                 type="button"
@@ -729,17 +730,17 @@ function PrestamoCard({
             </>
           ) : null}
           {prestamo.estado === 'APROBADA' ? (
-            <button className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'preparar')} type="button">
+            <button className="rounded-2xl bg-[#2563EB] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'preparar')} type="button">
               Preparar
             </button>
           ) : null}
           {prestamo.estado === 'PREPARADA' ? (
-            <button className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'entregar')} type="button">
+            <button className="rounded-2xl bg-[#2563EB] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'entregar')} type="button">
               Entregar
             </button>
           ) : null}
           {prestamo.estado === 'ENTREGADA' ? (
-            <button className="rounded-2xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'iniciar-devolucion')} type="button">
+            <button className="rounded-2xl bg-[#D97706] px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={accionEnCurso} onClick={() => onAccion(prestamo, 'iniciar-devolucion')} type="button">
               Iniciar devolución
             </button>
           ) : null}
@@ -857,8 +858,9 @@ export function Prestamos() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Préstamos</p>
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="absolute left-0 top-0 h-1 w-full bg-[#E30613]" />
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#E30613]">Préstamos</p>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-950">Flujo completo de préstamos</h1>
@@ -883,7 +885,7 @@ export function Prestamos() {
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Búsqueda por texto</span>
             <input
-              className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${clasesInacap.focoMarca}`}
               onChange={(event) => setBusqueda(event.target.value)}
               placeholder="Buscar por ID, solicitante, fecha, observaciones, rechazo o detalle"
               type="search"
@@ -894,7 +896,7 @@ export function Prestamos() {
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Estado</span>
             <select
-              className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:ring-4 ${clasesInacap.focoMarca}`}
               onChange={(event) => setEstado(event.target.value as EstadoPrestamo | '')}
               value={estado}
             >
@@ -916,10 +918,10 @@ export function Prestamos() {
       ) : null}
 
       {prestamosQuery.isError ? (
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">Error</p>
-          <h2 className="mt-2 text-xl font-bold text-rose-950">No se pudieron cargar los préstamos</h2>
-          <p className="mt-2 text-sm leading-6 text-rose-800">
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#DC2626]">Error</p>
+          <h2 className="mt-2 text-xl font-bold text-red-950">No se pudieron cargar los préstamos</h2>
+          <p className="mt-2 text-sm leading-6 text-[#DC2626]">
             {extractApiErrorMessage(prestamosQuery.error)}
           </p>
         </div>

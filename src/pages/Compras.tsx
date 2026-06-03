@@ -54,9 +54,9 @@ const etiquetasEstado: Record<EstadoOrdenCompra, string> = {
 
 const estilosEstado: Record<EstadoOrdenCompra, string> = {
   BORRADOR: 'bg-slate-100 text-slate-700 ring-slate-200',
-  EN_REVISION: 'bg-amber-50 text-amber-700 ring-amber-200',
-  ACEPTADA: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  RECHAZADA: 'bg-rose-50 text-rose-700 ring-rose-200',
+  EN_REVISION: clasesInacap.chipAdvertencia,
+  ACEPTADA: clasesInacap.chipExito,
+  RECHAZADA: clasesInacap.chipError,
 }
 
 const emptyItemForm: ItemFormState = {
@@ -200,11 +200,11 @@ function PrimaryButton(props: Omit<Parameters<typeof Button>[0], 'className'>) {
 }
 
 function SecondaryButton(props: Omit<Parameters<typeof Button>[0], 'className'>) {
-  return <Button {...props} className="border border-slate-300 bg-white text-slate-700 hover:bg-slate-50" />
+  return <Button {...props} className={clasesInacap.botonSecundario} />
 }
 
 function DangerButton(props: Omit<Parameters<typeof Button>[0], 'className'>) {
-  return <Button {...props} className="bg-rose-600 text-white hover:bg-rose-700" />
+  return <Button {...props} className="bg-[#DC2626] text-white hover:bg-red-700" />
 }
 
 function FieldLabel({ children }: { children: ReactNode }) {
@@ -213,8 +213,8 @@ function FieldLabel({ children }: { children: ReactNode }) {
 
 function ErrorPanel({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-      <p className="font-semibold text-rose-950">Error del backend</p>
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-[#DC2626]">
+      <p className="font-semibold text-red-950">Error del backend</p>
       <p className="mt-1 leading-6">{message}</p>
     </div>
   )
@@ -240,9 +240,9 @@ function ImpactoInventario({ orden, tiposEquipo }: { orden: OrdenCompra; tiposEq
   if (items.length === 0) return null
 
   return (
-    <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Impacto en inventario</p>
-      <ul className="mt-2 space-y-1 text-sm text-emerald-900">
+    <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#16A34A]">Impacto en inventario</p>
+      <ul className="mt-2 space-y-1 text-sm text-green-900">
         {items.map((item) => {
           const tipo = tiposEquipo.find((actual) => actual.id === item.tipo_equipo.id)
           const detalleStock = tipo
@@ -593,7 +593,8 @@ export function Compras() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="absolute left-0 top-0 h-1 w-full bg-[#E30613]" />
         <p className={`text-sm font-semibold uppercase tracking-widest ${clasesInacap.textoMarca}`}>Compras</p>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
