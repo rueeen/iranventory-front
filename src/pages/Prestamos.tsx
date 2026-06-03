@@ -25,7 +25,6 @@ import {
   etiquetasCondicion,
   etiquetasEstado,
   estilosEstado,
-  formatearFecha,
   formatearFechaCorta,
   obtenerUsernameSolicitante,
   type AccionPrestamo,
@@ -406,16 +405,6 @@ function SolicitudPrestamoForm({ unidades }: { unidades: Unidad[] }) {
   )
 }
 
-
-function EstadoBadge({ estado }: { estado: EstadoPrestamo }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${estilosEstado[estado]}`}
-    >
-      {etiquetasEstado[estado]}
-    </span>
-  )
-}
 
 export function Prestamos() {
   const { usuario } = useAuth()
