@@ -7,6 +7,7 @@ import { proveedoresApi } from '../api/proveedores'
 import { AsyncCombobox } from '../components/AsyncCombobox'
 import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { calcularTotalesOrdenCompra, formatearCLP } from '../lib/moneda'
+import { generarPdfOrdenCompra } from '../lib/pdfOrdenCompra'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
 import { extractApiErrorMessage, type Paginated } from '../types/api'
@@ -611,6 +612,7 @@ function OrdenCompraCard({
         <div className="flex flex-col items-start gap-3 lg:items-end">
           <EstadoBadge estado={orden.estado} />
           <div className="flex flex-wrap justify-end gap-2">
+            <SecondaryButton onClick={() => generarPdfOrdenCompra(orden)}>↧ Descargar PDF</SecondaryButton>
             {editable ? <SecondaryButton onClick={() => onEditOrder(orden)}>Editar orden</SecondaryButton> : null}
             {editable ? <PrimaryButton disabled={!puedeEnviar} onClick={() => onAction(orden, 'enviar-revision')}>Enviar a revisión</PrimaryButton> : null}
             {puedeResolver ? <PrimaryButton onClick={() => onAction(orden, 'aceptar')}>Aceptar</PrimaryButton> : null}
