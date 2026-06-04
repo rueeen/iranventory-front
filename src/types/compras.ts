@@ -113,6 +113,42 @@ export type OrdenCompraInput = {
   items?: ItemOrdenCompraInput[]
 }
 
+export type PreviewProveedorOrdenCompra = {
+  razon_social?: string | null
+  rut?: string | null
+  direccion?: string | null
+  ciudad?: string | null
+  contacto_nombre?: string | null
+  contacto_telefono?: string | null
+  email?: string | null
+}
+
+export type PreviewItemOrdenCompra = {
+  codigo_material?: string | null
+  descripcion?: string | null
+  cantidad_solicitada?: number | string | null
+  unidad_medida?: string | null
+  precio_unitario?: string | number | null
+  tipo_equipo_sugerido_id?: number | null
+}
+
+export type PreviewOrdenCompra = {
+  numero_inacap?: string | null
+  fecha_publicacion?: string | null
+  fecha_emision?: string | null
+  sede_destino?: string | null
+  direccion_despacho?: string | null
+  recibido_por_nombre?: string | null
+  comprador_nombre?: string | null
+  referencia_pedido?: string | null
+  codigo_inversion?: string | null
+  tasa_iva?: string | number | null
+  proveedor?: PreviewProveedorOrdenCompra | null
+  proveedor_existente_id?: number | null
+  items?: PreviewItemOrdenCompra[]
+  advertencias?: string[]
+}
+
 export type AccionRechazarOrdenCompraInput = {
   observacion?: string
   observaciones?: string

@@ -9,6 +9,7 @@ import type {
   ItemOrdenCompraUpdateInput,
   OrdenCompra,
   OrdenCompraInput,
+  PreviewOrdenCompra,
 } from '../types/compras'
 
 export type ComprasFiltros = {
@@ -46,6 +47,11 @@ export function obtenerOrdenesCompraPaginadas(filtros?: ComprasFiltros): Promise
 
 export async function crearOrdenCompra(input: OrdenCompraInput): Promise<OrdenCompra> {
   const { data } = await client.post<OrdenCompra>('/api/ordenes-compra/', input)
+  return data
+}
+
+export async function importarPreviewOrdenCompra(texto: string): Promise<PreviewOrdenCompra> {
+  const { data } = await client.post<PreviewOrdenCompra>('/api/ordenes-compra/importar-preview/', { texto })
   return data
 }
 
@@ -103,6 +109,7 @@ export const comprasApi = {
   obtenerOrdenesCompra,
   obtenerOrdenesCompraPaginadas,
   crearOrdenCompra,
+  importarPreviewOrdenCompra,
   actualizarOrdenCompra,
   obtenerItemsOrdenCompra,
   crearItemOrdenCompra,
