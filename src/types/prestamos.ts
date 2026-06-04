@@ -10,6 +10,7 @@ export type EstadoPrestamo =
   | 'DEVOLUCION'
   | 'CERRADA'
   | 'RECHAZADA'
+  | 'CANCELADA'
 
 export type DetallePrestamo = {
   id: number

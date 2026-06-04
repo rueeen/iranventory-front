@@ -37,7 +37,7 @@ type PrestamoDetalleModalProps = {
   accionPendiente: AccionPendiente | null
   accionError: string | null
   onClose: () => void
-  onAccion: (prestamo: Prestamo, accion: AccionPrestamo, motivoRechazo?: string) => void
+  onAccion: (prestamo: Prestamo, accion: AccionPrestamo, motivoAccion?: string) => void
   onRegistrarDevolucion: (prestamo: Prestamo, detalles: RegistrarDevolucionItem[]) => void
 }
 
@@ -48,6 +48,7 @@ const estilosAccion: Record<AccionPrestamo, string> = {
   entregar: 'bg-[#2563EB] text-white hover:bg-blue-700',
   'iniciar-devolucion': 'bg-[#D97706] text-white hover:bg-amber-700',
   cerrar: 'border border-slate-300 text-slate-700 hover:bg-slate-50',
+  cancelar: 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200',
 }
 
 const etiquetasAccion: Record<AccionPrestamo, string> = {
@@ -57,6 +58,7 @@ const etiquetasAccion: Record<AccionPrestamo, string> = {
   entregar: 'Entregar',
   'iniciar-devolucion': 'Iniciar devolución',
   cerrar: 'Cerrar préstamo',
+  cancelar: 'Cancelar préstamo',
 }
 
 function ErrorAlert({ message }: { message: string }) {
@@ -274,6 +276,7 @@ export function PrestamoDetalleModal({
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const [motivoRechazo, setMotivoRechazo] = useState('')
+  const [motivoCancelacion, setMotivoCancelacion] = useState('')
   const [motivoError, setMotivoError] = useState<string | null>(null)
 
   const detalleQuery = useQuery({
@@ -288,6 +291,7 @@ export function PrestamoDetalleModal({
     }
 
     setMotivoRechazo('')
+    setMotivoCancelacion('')
     setMotivoError(null)
     const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
     window.setTimeout(() => closeButtonRef.current?.focus(), 0)
@@ -363,6 +367,12 @@ export function PrestamoDetalleModal({
 
       setMotivoError(null)
       onAccion(prestamo, accion, motivo)
+      return
+    }
+
+    if (accion === 'cancelar') {
+      setMotivoError(null)
+      onAccion(prestamo, accion, motivoCancelacion.trim() || undefined)
       return
     }
 
@@ -479,6 +489,19 @@ export function PrestamoDetalleModal({
                         value={motivoRechazo}
                       />
                       {motivoError ? <span className="mt-2 block text-sm text-[#DC2626]">{motivoError}</span> : null}
+                    </label>
+                  ) : null}
+
+                  {accionesDisponibles(prestamo.estado).includes('cancelar') ? (
+                    <label className="block max-w-xl">
+                      <span className="text-sm font-medium text-slate-700">Motivo de cancelación</span>
+                      <textarea
+                        className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${clasesInacap.focoMarca}`}
+                        onChange={(event) => setMotivoCancelacion(event.target.value)}
+                        placeholder="Describe por qué se cancela el préstamo (opcional)."
+                        rows={3}
+                        value={motivoCancelacion}
+                      />
                     </label>
                   ) : null}
 

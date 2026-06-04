@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   aprobarPrestamo,
+  cancelarPrestamo,
   cerrarPrestamo,
   entregarPrestamo,
   iniciarDevolucion,
@@ -452,11 +453,13 @@ export function Prestamos() {
       accion,
       detalles,
       motivoRechazo,
+      motivoCancelacion,
     }: {
       prestamo: Prestamo
       accion: AccionPrestamo | 'registrar-devolucion'
       detalles?: RegistrarDevolucionItem[]
       motivoRechazo?: string
+      motivoCancelacion?: string
     }) => {
       setAccionPendiente({ prestamoId: prestamo.id, accion })
 
@@ -482,6 +485,8 @@ export function Prestamos() {
           return registrarDevolucion(prestamo.id, detalles ?? [])
         case 'cerrar':
           return cerrarPrestamo(prestamo.id)
+        case 'cancelar':
+          return cancelarPrestamo(prestamo.id, motivoCancelacion?.trim())
       }
     },
     onSuccess: (_prestamoActualizado, variables) => {
@@ -504,7 +509,7 @@ export function Prestamos() {
     setPage(1)
   }
 
-  function ejecutarAccion(prestamo: Prestamo, accion: AccionPrestamo, motivoRechazo?: string) {
+  function ejecutarAccion(prestamo: Prestamo, accion: AccionPrestamo, motivoAccion?: string) {
     const mensajes: Record<AccionPrestamo, string> = {
       aprobar: `¿Aprobar el préstamo #${prestamo.id}?`,
       rechazar: `¿Rechazar el préstamo #${prestamo.id}?`,
@@ -512,10 +517,16 @@ export function Prestamos() {
       entregar: `¿Entregar el préstamo #${prestamo.id}?`,
       'iniciar-devolucion': `¿Iniciar devolución del préstamo #${prestamo.id}?`,
       cerrar: `¿Cerrar el préstamo #${prestamo.id}?`,
+      cancelar: `¿Cancelar el préstamo #${prestamo.id}?`,
     }
 
     if (window.confirm(mensajes[accion])) {
-      accionMutation.mutate({ prestamo, accion, motivoRechazo })
+      accionMutation.mutate({
+        prestamo,
+        accion,
+        motivoRechazo: accion === 'rechazar' ? motivoAccion : undefined,
+        motivoCancelacion: accion === 'cancelar' ? motivoAccion : undefined,
+      })
     }
   }
 
