@@ -12,6 +12,7 @@ export const estadosPrestamo: EstadoPrestamo[] = [
   'DEVOLUCION',
   'CERRADA',
   'RECHAZADA',
+  'CANCELADA',
 ]
 
 export const condicionesDevolucion: EstadoUnidad[] = ['BUENO', 'REPARABLE', 'MALO']
@@ -24,6 +25,7 @@ export const etiquetasEstado: Record<EstadoPrestamo, string> = {
   DEVOLUCION: 'Devolución',
   CERRADA: 'Cerrada',
   RECHAZADA: 'Rechazada',
+  CANCELADA: 'Cancelada',
 }
 
 export const etiquetasCondicion: Record<EstadoUnidad, string> = {
@@ -40,24 +42,26 @@ export const estilosEstado: Record<EstadoPrestamo, string> = {
   DEVOLUCION: clasesInacap.chipAdvertencia,
   CERRADA: clasesInacap.chipExito,
   RECHAZADA: clasesInacap.chipError,
+  CANCELADA: 'bg-slate-100 text-slate-700 ring-slate-300',
 }
 
-export type AccionPrestamo = 'aprobar' | 'rechazar' | 'preparar' | 'entregar' | 'iniciar-devolucion' | 'cerrar'
+export type AccionPrestamo = 'aprobar' | 'rechazar' | 'preparar' | 'entregar' | 'iniciar-devolucion' | 'cerrar' | 'cancelar'
 
 export function accionesDisponibles(estado: EstadoPrestamo): AccionPrestamo[] {
   switch (estado) {
     case 'SOLICITADA':
       return ['aprobar', 'rechazar']
     case 'APROBADA':
-      return ['preparar']
+      return ['preparar', 'cancelar']
     case 'PREPARADA':
-      return ['entregar']
+      return ['entregar', 'cancelar']
     case 'ENTREGADA':
       return ['iniciar-devolucion']
     case 'DEVOLUCION':
       return ['cerrar']
     case 'CERRADA':
     case 'RECHAZADA':
+    case 'CANCELADA':
       return []
   }
 }

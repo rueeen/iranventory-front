@@ -2,7 +2,7 @@ import type { TipoEquipo, Ubicacion } from './catalogo'
 
 export type EstadoUnidad = 'BUENO' | 'REPARABLE' | 'MALO'
 
-export type SituacionUnidad = 'DISPONIBLE' | 'PRESTADA' | 'REPARACION' | 'BAJA'
+export type SituacionUnidad = 'DISPONIBLE' | 'RESERVADA' | 'PRESTADA' | 'REPARACION' | 'BAJA'
 
 export type Unidad = {
   id: number

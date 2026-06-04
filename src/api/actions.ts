@@ -49,3 +49,7 @@ export function registrarDevolucion(
 export function cerrarPrestamo(id: number): Promise<Prestamo> {
   return postAction<Prestamo>(`/api/prestamos/${id}/cerrar/`)
 }
+
+export function cancelarPrestamo(id: number, motivo?: string): Promise<Prestamo> {
+  return postAction<Prestamo>(`/api/prestamos/${id}/cancelar/`, { motivo })
+}

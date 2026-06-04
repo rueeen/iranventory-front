@@ -10,7 +10,7 @@ import type { Categoria, TipoEquipo, TipoEquipoInput, TipoSeguimiento } from '..
 import type { EstadoUnidad, SituacionUnidad, Unidad, UnidadInput } from '../types/inventario'
 
 const tiposSeguimiento: TipoSeguimiento[] = ['SERIE', 'GRANEL']
-const situacionesUnidad: SituacionUnidad[] = ['DISPONIBLE', 'PRESTADA', 'REPARACION', 'BAJA']
+const situacionesUnidad: SituacionUnidad[] = ['DISPONIBLE', 'RESERVADA', 'PRESTADA', 'REPARACION', 'BAJA']
 const estadosUnidad: EstadoUnidad[] = ['BUENO', 'REPARABLE', 'MALO']
 const UNIDADES_PAGE_SIZE = 25
 
@@ -46,6 +46,7 @@ const etiquetasSeguimiento: Record<TipoSeguimiento, string> = {
 
 const etiquetasSituacion: Record<SituacionUnidad, string> = {
   DISPONIBLE: 'Disponible',
+  RESERVADA: 'Reservada',
   PRESTADA: 'Prestada',
   REPARACION: 'Reparación',
   BAJA: 'Baja',
@@ -64,6 +65,7 @@ const estilosSeguimiento: Record<TipoSeguimiento, string> = {
 
 const estilosSituacion: Record<SituacionUnidad, string> = {
   DISPONIBLE: clasesInacap.chipExito,
+  RESERVADA: clasesInacap.chipAdvertencia,
   PRESTADA: clasesInacap.chipInformacion,
   REPARACION: clasesInacap.chipAdvertencia,
   BAJA: clasesInacap.chipError,
