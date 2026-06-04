@@ -241,7 +241,7 @@ export function generarPdfOrdenCompra(orden: OrdenCompra): void {
     body: (orden.items ?? []).map((item, index) => [
       String(index + 1),
       textoSeguro(item.codigo_material, '—'),
-      textoSeguro(item.observaciones, item.tipo_equipo.nombre),
+      textoSeguro(item.tipo_equipo.nombre),
       String(item.cantidad_solicitada),
       textoSeguro(item.unidad_medida, 'UNI'),
       formatearCLP(item.precio_unitario),
