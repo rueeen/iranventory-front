@@ -53,3 +53,10 @@ export type TipoEquipoInput = {
   stock_granel?: number
   observaciones?: string
 }
+export type ResumenImportacion = {
+  tipos_equipo_creados: number
+  tipos_equipo_actualizados: number
+  asignaturas_creadas: number
+  vinculos_creados: number
+  advertencias: string[]
+}
