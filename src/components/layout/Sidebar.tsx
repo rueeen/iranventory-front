@@ -22,6 +22,11 @@ const menuItems: MenuItem[] = [
     roles: ['PANOLERO', 'DIRECTOR'],
   },
   {
+    label: 'Importar estándar',
+    to: '/catalogo/importar-estandar',
+    roles: ['PANOLERO', 'DIRECTOR'],
+  },
+  {
     label: 'Préstamos',
     to: '/prestamos',
     roles: ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR'],

@@ -6,6 +6,7 @@ import { Home } from './pages/Home'
 import { Compras } from './pages/Compras'
 import { Login } from './pages/Login'
 import { Inventario } from './pages/Inventario'
+import { ImportarEstandar } from './pages/ImportarEstandar'
 import { NotFound } from './pages/NotFound'
 import { Prestamos } from './pages/Prestamos'
 import { Usuarios } from './pages/Usuarios'
@@ -39,6 +40,14 @@ function App() {
           element={
             <ProtectedRoute roles={STAFF_ROLES}>
               <Inventario />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/catalogo/importar-estandar"
+          element={
+            <ProtectedRoute roles={STAFF_ROLES}>
+              <ImportarEstandar />
             </ProtectedRoute>
           }
         />

@@ -1,7 +1,7 @@
 import { client } from './client'
 import { fetchAllPages, obtenerListaDesdeRespuesta, esRespuestaPaginada, type ListResponse } from './pagination'
 import type { ListParams } from '../types/api'
-import type { Asignatura, Carrera, Categoria, TipoEquipo, TipoEquipoInput, Ubicacion } from '../types/catalogo'
+import type { Asignatura, Carrera, Categoria, ResumenImportacion, TipoEquipo, TipoEquipoInput, Ubicacion } from '../types/catalogo'
 
 export { obtenerListaDesdeRespuesta, esRespuestaPaginada }
 
@@ -45,6 +45,17 @@ export async function actualizarTipoEquipo(id: number, input: TipoEquipoInput): 
   return data
 }
 
+export async function importarEstandar(archivo: File): Promise<ResumenImportacion> {
+  const formData = new FormData()
+  formData.append('archivo', archivo)
+
+  const { data } = await client.post<ResumenImportacion>('/api/catalogo/importar-estandar/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+  return data
+}
+
 export const catalogoApi = {
   obtenerCategorias,
   obtenerCarreras,
@@ -54,4 +65,5 @@ export const catalogoApi = {
   buscarTiposEquipo,
   crearTipoEquipo,
   actualizarTipoEquipo,
+  importarEstandar,
 }
