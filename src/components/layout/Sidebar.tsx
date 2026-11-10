@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { obtenerResumenMantencion } from '../../api/mantencion'
 import { obtenerResumenAtrasos } from '../../api/prestamos'
 import { queryKeys } from '../../lib/queryKeys'
 import { NavLink } from 'react-router-dom'
 
-import { useAuth } from '../../features/auth/AuthContext'
+import { useAuth, tieneRol } from '../../features/auth/AuthContext'
 import { clasesInacap } from '../../lib/theme'
 import type { Rol } from '../../types/auth'
 
@@ -22,6 +23,11 @@ const menuItems: MenuItem[] = [
   {
     label: 'Inventario',
     to: '/inventario',
+    roles: ['PANOLERO', 'DIRECTOR'],
+  },
+  {
+    label: 'Mantención',
+    to: '/mantencion',
     roles: ['PANOLERO', 'DIRECTOR'],
   },
   {
@@ -54,6 +60,13 @@ export function Sidebar() {
     staleTime: 60_000,
   })
   const atrasados = resumenQuery.isSuccess ? resumenQuery.data.atrasados : 0
+  const mantencionQuery = useQuery({
+    queryKey: queryKeys.resumenMantencion(),
+    queryFn: obtenerResumenMantencion,
+    staleTime: 60_000,
+    enabled: tieneRol(usuario, ['PANOLERO', 'DIRECTOR']),
+  })
+  const vencidos = mantencionQuery.isSuccess ? mantencionQuery.data.vencidos : 0
   const visibleItems = menuItems.filter((item) => usuario && item.roles.includes(usuario.rol))
 
   return (
@@ -80,6 +93,9 @@ export function Sidebar() {
             to={item.to}
           >
             {item.label}
+            {item.to === '/mantencion' && vencidos > 0 ? (
+              <span aria-label={`${vencidos} mantenciones vencidas`} className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${clasesInacap.chipError}`}>{vencidos}</span>
+            ) : null}
             {item.to === '/prestamos' && atrasados > 0 ? (
               <span aria-label={`${atrasados} préstamos atrasados`} className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${clasesInacap.chipError}`}>
                 {atrasados}

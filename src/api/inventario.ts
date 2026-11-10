@@ -68,7 +68,17 @@ export async function actualizarUnidad(id: number, input: UnidadInput): Promise<
   return data
 }
 
+export async function obtenerUnidad(id: number): Promise<Unidad> {
+  return (await client.get<Unidad>(`/api/unidades/${id}/`)).data
+}
+
+export async function enviarUnidadAMantencion(id: number): Promise<Unidad> {
+  return (await client.post<Unidad>(`/api/unidades/${id}/enviar-mantencion/`)).data
+}
+
 export const inventarioApi = {
+  enviarUnidadAMantencion,
+  obtenerUnidad,
   obtenerUnidades,
   obtenerUnidadesPaginadas,
   crearUnidad,

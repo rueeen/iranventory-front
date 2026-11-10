@@ -11,6 +11,10 @@ function resourceKeys(resource: string) {
 }
 
 export const queryKeys = {
+  planesMantencion: resourceKeys('planesMantencion'),
+  registrosMantencion: resourceKeys('registrosMantencion'),
+  resumenMantencion: () => ['planesMantencion', 'resumen'] as const,
+  fichaMantencion: (id: number) => ['fichaMantencion', id] as const,
   categorias: resourceKeys('categorias'),
   carreras: resourceKeys('carreras'),
   asignaturas: resourceKeys('asignaturas'),

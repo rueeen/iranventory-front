@@ -1,6 +1,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
+import { obtenerResumenMantencion } from '../api/mantencion'
 import { dashboardApi, type DashboardTotal } from '../api/dashboard'
 import { tieneRol, useAuth } from '../features/auth/AuthContext'
 import { pluralizar } from '../lib/prestamos'
@@ -26,6 +27,7 @@ const rolesStaff: Rol[] = ['PANOLERO', 'DIRECTOR']
 const rolesPrestamos: Rol[] = ['ALUMNO', 'DOCENTE', 'PANOLERO', 'DIRECTOR']
 
 const quickAccesses: QuickAccess[] = [
+  { label: 'Ver mantención', description: 'Planificar mantenciones y consultar registros de equipos.', to: '/mantencion', roles: rolesStaff },
   {
     label: 'Ver inventario',
     description: 'Consultar tipos de equipo, unidades y disponibilidad.',
@@ -99,6 +101,13 @@ export function Home() {
 
   const puedeVerMetricasStaff = tieneRol(usuario, rolesStaff)
   const puedeVerMetricasPrestamos = tieneRol(usuario, rolesPrestamos)
+
+  const mantencionQuery = useQuery({
+    queryKey: queryKeys.resumenMantencion(),
+    queryFn: obtenerResumenMantencion,
+    enabled: puedeVerMetricasStaff,
+    staleTime: 60_000,
+  })
 
   const totalTiposEquipoQuery = useQuery<DashboardTotal, Error>({
     queryKey: queryKeys.dashboard.totalTiposEquipo(),
@@ -186,6 +195,13 @@ export function Home() {
         </div>
       </article>
 
+      {puedeVerMetricasStaff && mantencionQuery.isSuccess && mantencionQuery.data.vencidos > 0 ? (
+        <div role="status" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaAdvertencia}`}>
+          <p>Hay {pluralizar(mantencionQuery.data.vencidos, 'mantención vencida', 'mantenciones vencidas')}</p>
+          <Link className="mt-2 inline-block font-semibold underline" to="/mantencion?estado_plan=VENCIDO">Ver plan</Link>
+        </div>
+      ) : null}
+
       {resumen && resumen.atrasados > 0 ? (
         <div role="alert" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaError}`}>
           <p>
@@ -223,7 +239,7 @@ export function Home() {
           <p className="mt-1 text-sm text-slate-500">Atajos a las vistas principales del sistema.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {quickAccesses.map((access) => {
+          {quickAccesses.filter((access) => access.to !== '/mantencion' || puedeVerMetricasStaff).map((access) => {
             const canAccess = tieneRol(usuario, access.roles)
 
             if (!canAccess) {
