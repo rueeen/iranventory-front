@@ -15,6 +15,7 @@ export type PlanesMantencionFiltros = ListParams & {
   ordering?: string
 }
 export type RegistrosMantencionFiltros = ListParams & {
+  search?: string
   unidad?: number
   plan?: number
   tipo?: TipoMantencion | ''

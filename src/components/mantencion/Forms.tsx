@@ -81,7 +81,7 @@ export function RegistroForm({ registro, unidadPlan, planId, onClose }: {
     <form className="space-y-4" onSubmit={e => { e.preventDefault(); if (form.unidad) mutation.mutate() }}>
       <ErrorPanel error={mutation.error} />
       <div><span className="text-sm font-medium">Unidad</span>
-        {unidadPlan ? <p>{unidadPlan.codigo_activo} · {unidadPlan.tipo_equipo_nombre}</p> : registro ? <p>Unidad #{registro.unidad}</p> :
+        {unidadPlan ? <p>{unidadPlan.codigo_activo} · {unidadPlan.tipo_equipo_nombre}</p> : registro ? <p>{registro.unidad_detalle.codigo_activo ?? `#${registro.unidad}`} · {registro.unidad_detalle.tipo_equipo_nombre}</p> :
           <AsyncCombobox<Unidad> value={form.unidad || null} selectedItem={unidad} placeholder="Buscar unidad por código o nombre" fetchOptions={buscarUnidades} getOptionId={u => u.id} getOptionLabel={etiquetaUnidad} onChange={(id, u) => { setUnidad(u); setForm(prev => ({ ...prev, unidad: id ?? 0 })) }} />}
         {errors.unidad ? <p className="text-sm text-red-600">{errors.unidad.join(' ')}</p> : null}
       </div>
