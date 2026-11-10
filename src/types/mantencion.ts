@@ -36,9 +36,17 @@ export type PlanMantencionInput = {
   activo: boolean
   observaciones: string
 }
+export type UnidadRegistro = {
+  id: number
+  codigo_activo: string | null
+  codigo_peoplesoft: string | null
+  tipo_equipo_nombre: string
+}
+
 export type RegistroMantencion = {
   id: number
   unidad: number
+  unidad_detalle: UnidadRegistro
   plan: number | null
   tipo: TipoMantencion
   fecha_solicitud: string | null

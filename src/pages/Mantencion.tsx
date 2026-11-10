@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mantencionApi, type PlanesMantencionFiltros, type RegistrosMantencionFiltros } from '../api/mantencion'
-import { inventarioApi } from '../api/inventario'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
@@ -45,6 +44,19 @@ export function Mantencion() {
   const page = pagina.filtro === filterId ? pagina.page : 1
   useEffect(() => { setPagina({ filtro: filterId, page: 1 }) }, [filterId])
   const [registroFiltros, setRegistroFiltros] = useState<RegistrosMantencionFiltros>({ page: 1 })
+  const [busquedaRegistros, setBusquedaRegistros] = useState('')
+  const busquedaRegistrosDebounced = useDebouncedValue(busquedaRegistros, 300)
+  const filtrosRegistros = useMemo<RegistrosMantencionFiltros>(() => ({
+    ...registroFiltros,
+    search: busquedaRegistrosDebounced,
+    page: (registroFiltros.search ?? '') === busquedaRegistrosDebounced ? registroFiltros.page : 1,
+  }), [registroFiltros, busquedaRegistrosDebounced])
+  useEffect(() => {
+    setRegistroFiltros(prev => (prev.search ?? '') === busquedaRegistrosDebounced
+      ? prev
+      : { ...prev, search: busquedaRegistrosDebounced, page: 1 })
+  }, [busquedaRegistrosDebounced])
+
   const [editor, setEditor] = useState<Editor | null>(null)
   const [borrar, setBorrar] = useState<{ tipo: 'plan' | 'registro'; id: number } | null>(null)
   const filtros = useMemo<PlanesMantencionFiltros>(() => ({
@@ -53,18 +65,7 @@ export function Mantencion() {
   }), [page, debounced, estado, prioridad, frecuencia, inactivos])
   const resumen = useQuery({ queryKey: queryKeys.resumenMantencion(), queryFn: mantencionApi.obtenerResumenMantencion, staleTime: 60_000 })
   const planes = useQuery({ queryKey: queryKeys.planesMantencion.list(filtros), queryFn: () => mantencionApi.obtenerPlanesMantencion(filtros), enabled: tab === 'planes' })
-  const registros = useQuery({ queryKey: queryKeys.registrosMantencion.list(registroFiltros), queryFn: () => mantencionApi.obtenerRegistrosMantencion(registroFiltros), enabled: tab === 'registros' })
-  const unidadIds = [...new Set(registros.data?.results.map(r => r.unidad) ?? [])]
-  const unidades = useQuery({
-    queryKey: [...queryKeys.unidades.all, 'mantencion-registros', unidadIds],
-    queryFn: async () => {
-      const pairs = await Promise.all(unidadIds.map(async id => {
-        return [id, await inventarioApi.obtenerUnidad(id)] as const
-      }))
-      return new Map(pairs)
-    },
-    enabled: tab === 'registros' && unidadIds.length > 0,
-  })
+  const registros = useQuery({ queryKey: queryKeys.registrosMantencion.list(filtrosRegistros), queryFn: () => mantencionApi.obtenerRegistrosMantencion(filtrosRegistros), enabled: tab === 'registros' })
   const pdf = useMutation({
     mutationFn: async (id: number) => {
       const ficha = await qc.fetchQuery({ queryKey: queryKeys.fichaMantencion(id), queryFn: () => mantencionApi.obtenerFichaMantencion(id) })
@@ -138,21 +139,21 @@ export function Mantencion() {
       </table></div>
       {planes.data ? <Paginacion page={page} total={planes.data.count} next={planes.data.next} previous={planes.data.previous} pending={planes.isFetching} onChange={n => setPagina({ filtro: filterId, page: n })} /> : null}
     </div> : <div className={`rounded-3xl p-5 ${clasesInacap.superficie}`}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="Búsqueda"><input type="search" className={inputClass} value={busquedaRegistros} onChange={e => setBusquedaRegistros(e.target.value)} /></Field>
         <Field label="Tipo"><select className={inputClass} value={registroFiltros.tipo ?? ''} onChange={e => filtroRegistro('tipo', e.target.value)}><option value="">Todos</option>{Object.entries(etiquetasTipoMantencion).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
         <Field label="Desde"><input className={inputClass} type="date" value={registroFiltros.fecha_desde ?? ''} onChange={e => filtroRegistro('fecha_desde', e.target.value)} /></Field>
         <Field label="Hasta"><input className={inputClass} type="date" value={registroFiltros.fecha_hasta ?? ''} min={registroFiltros.fecha_desde} onChange={e => filtroRegistro('fecha_hasta', e.target.value)} /></Field>
       </div>
       <button className={primaryClass} onClick={() => setEditor({ tipo: 'registro' })}>Nuevo registro</button>
-      <ErrorPanel error={registros.error || unidades.error} />
+      <ErrorPanel error={registros.error} />
       {registros.isLoading ? <p role="status">Cargando registros...</p> : null}
       {registros.isSuccess && !registros.data.results.length ? <p className="p-5 text-slate-500">No hay registros que coincidan con los filtros.</p> : null}
       <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Fecha', 'Código', 'Equipo', 'Tipo', 'Descripción', 'Empresa', 'OC', 'Costo', 'Realizado por', 'Estado resultante', 'Acciones'].map(c => <th className={cell} key={c}>{c}</th>)}</tr></thead>
         <tbody>{registros.data?.results.map(r => {
-          const u = unidades.data?.get(r.unidad)
           return <tr key={r.id} className="border-t align-top hover:bg-slate-50">
-            <td className={cell}>{formatearFechaCorta(r.fecha_realizacion)}</td><td className={cell}>{u?.codigo_activo ?? '#' + r.unidad}</td><td className={cell}>{u?.tipo_equipo.nombre ?? '—'}</td>
+            <td className={cell}>{formatearFechaCorta(r.fecha_realizacion)}</td><td className={cell}>{r.unidad_detalle.codigo_activo ?? `#${r.unidad}`}<small className="block text-slate-500">{r.unidad_detalle.codigo_peoplesoft}</small></td><td className={cell}>{r.unidad_detalle.tipo_equipo_nombre}</td>
             <td className={cell}><Chip text={etiquetasTipoMantencion[r.tipo]} style={estilosTipoMantencion[r.tipo]} /></td><td className={cell}>{r.descripcion}</td><td className={cell}>{r.empresa}</td>
             <td className={cell}>{r.orden_compra?.numero || r.numero_orden_compra}</td><td className={cell}>{formatearCLP(r.costo)}</td><td className={cell}>{r.realizado_por}</td>
             <td className={cell}>{{ BUENO: 'Bueno', REPARABLE: 'Reparable', MALO: 'Malo', '': 'Sin cambio' }[r.estado_resultante]}</td>
@@ -160,7 +161,7 @@ export function Mantencion() {
           </tr>
         })}</tbody>
       </table></div>
-      {registros.data ? <Paginacion page={registroFiltros.page ?? 1} total={registros.data.count} next={registros.data.next} previous={registros.data.previous} pending={registros.isFetching} onChange={n => setRegistroFiltros({ ...registroFiltros, page: n })} /> : null}
+      {registros.data ? <Paginacion page={filtrosRegistros.page ?? 1} total={registros.data.count} next={registros.data.next} previous={registros.data.previous} pending={registros.isFetching} onChange={n => setRegistroFiltros({ ...registroFiltros, page: n })} /> : null}
     </div>}
     {editor?.tipo === 'plan' ? <PlanForm plan={editor.plan} onClose={() => setEditor(null)} /> : null}
     {editor?.tipo === 'registro' ? <RegistroForm registro={editor.registro} unidadPlan={editor.plan?.unidad} planId={editor.plan?.id} onClose={() => setEditor(null)} /> : null}
