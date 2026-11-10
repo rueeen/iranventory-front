@@ -12,6 +12,7 @@ import {
   estilosEstado,
   formatearFecha,
   formatearTexto,
+  pluralizar,
   obtenerNombreSolicitante,
   type AccionPrestamo,
 } from '../lib/prestamos'
@@ -427,7 +428,7 @@ export function PrestamoDetalleModal({
             <>
               {prestamo.esta_atrasado ? (
                 <div role="alert" className={`rounded-2xl px-4 py-3 text-sm ${clasesInacap.alertaError}`}>
-                  Este préstamo está atrasado{prestamo.dias_atraso !== null ? ` ${prestamo.dias_atraso} ${prestamo.dias_atraso === 1 ? 'día' : 'días'}` : ''}.
+                  Este préstamo está atrasado{prestamo.dias_atraso !== null ? ` ${pluralizar(prestamo.dias_atraso, 'día', 'días')}` : ''}.
                   {' '}Fecha comprometida: {formatearFecha(prestamo.fecha_devolucion_comprometida)}.
                 </div>
               ) : null}

@@ -125,8 +125,12 @@ export function obtenerUsernameSolicitante(prestamo: Prestamo): string {
   return prestamo.solicitante.username || `#${prestamo.solicitante.id}`
 }
 
+export function pluralizar(cantidad: number, singular: string, plural: string): string {
+  return `${cantidad} ${cantidad === 1 ? singular : plural}`
+}
+
 export function textoAtraso(prestamo: Prestamo): string | null {
   if (!prestamo.esta_atrasado) return null
   if (prestamo.dias_atraso === null) return 'Atrasado'
-  return `Atrasado ${prestamo.dias_atraso} ${prestamo.dias_atraso === 1 ? 'día' : 'días'}`
+  return `Atrasado ${pluralizar(prestamo.dias_atraso, 'día', 'días')}`
 }

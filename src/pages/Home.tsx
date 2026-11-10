@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { dashboardApi, type DashboardTotal } from '../api/dashboard'
 import { tieneRol, useAuth } from '../features/auth/AuthContext'
+import { pluralizar } from '../lib/prestamos'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
 import type { Rol } from '../types/auth'
@@ -189,15 +190,15 @@ export function Home() {
         <div role="alert" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaError}`}>
           <p>
             {tieneRol(usuario, rolesStaff)
-              ? `Hay ${resumen.atrasados} préstamos atrasados`
-              : `Tienes ${resumen.atrasados} préstamos atrasados. Devuelve el equipo en el pañol lo antes posible.`}
+              ? `Hay ${pluralizar(resumen.atrasados, 'préstamo atrasado', 'préstamos atrasados')}`
+              : `Tienes ${pluralizar(resumen.atrasados, 'préstamo atrasado', 'préstamos atrasados')}. Devuelve el equipo en el pañol lo antes posible.`}
           </p>
-          {tieneRol(usuario, rolesStaff) && resumen.vencen_hoy > 0 ? <p>{resumen.vencen_hoy} vencen hoy</p> : null}
+          {tieneRol(usuario, rolesStaff) && resumen.vencen_hoy > 0 ? <p>{pluralizar(resumen.vencen_hoy, 'vence hoy', 'vencen hoy')}</p> : null}
           <Link className="mt-2 inline-block font-semibold underline" to="/prestamos?atrasado=1">Ver atrasados</Link>
         </div>
       ) : resumen && resumen.atrasados === 0 && resumen.vencen_hoy > 0 ? (
         <div role="status" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaAdvertencia}`}>
-          {resumen.vencen_hoy} préstamos vencen hoy
+          {pluralizar(resumen.vencen_hoy, 'préstamo vence hoy', 'préstamos vencen hoy')}
         </div>
       ) : null}
 
