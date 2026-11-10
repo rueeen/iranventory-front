@@ -19,7 +19,7 @@ export function ImportarPlan({ onClose }: { onClose: () => void }) {
       setResultado(data)
       setSimulacion(args.simular && data.simulado ? { archivo: args.archivo, crear: args.crear } : null)
       if (!args.simular) {
-        for (const key of [queryKeys.planesMantencion.all, queryKeys.unidades.all, queryKeys.tiposEquipo.all, ['fichaMantencion']]) void qc.invalidateQueries({ queryKey: key })
+        for (const key of [queryKeys.planesMantencion.all, queryKeys.unidades.all, queryKeys.tiposEquipo.all]) void qc.invalidateQueries({ queryKey: key })
       }
     },
     onError: () => setSimulacion(null),

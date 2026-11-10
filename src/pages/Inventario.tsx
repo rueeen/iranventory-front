@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
-import { mantencionApi } from '../api/mantencion'
-import { generarPdfFichaMantencion } from '../lib/pdfFichaMantencion'
+import { BotonFicha } from '../components/mantencion/BotonFicha'
 import { Modal as MantencionModal, ErrorPanel as MantencionError, primaryClass } from '../components/mantencion/Shared'
 import { inventarioApi, type UnidadesFiltros } from '../api/inventario'
 import { extractApiErrorMessage, type Paginated } from '../types/api'
@@ -286,12 +285,6 @@ export function Inventario() {
     },
   })
 
-  const fichaMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const ficha = await queryClient.fetchQuery({ queryKey: queryKeys.fichaMantencion(id), queryFn: () => mantencionApi.obtenerFichaMantencion(id) })
-      generarPdfFichaMantencion(ficha, id)
-    },
-  })
   const enviarMantencionMutation = useMutation({
     mutationFn: (id: number) => inventarioApi.enviarUnidadAMantencion(id),
     onSuccess: () => {
@@ -590,7 +583,7 @@ export function Inventario() {
                       <td className="px-6 py-4 text-slate-600">{obtenerUbicacion(unidad)}</td>
                       <td className="px-6 py-4"><div className="flex flex-wrap gap-2">
                         <SecondaryButton onClick={() => abrirEditarUnidad(unidad)}>Editar</SecondaryButton>
-                        <SecondaryButton disabled={fichaMutation.isPending} onClick={() => fichaMutation.mutate(unidad.id)}>Ficha PDF</SecondaryButton>
+                        <BotonFicha unidadId={unidad.id} codigo={unidad.codigo_activo} className={`rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${clasesInacap.botonSecundario}`} />
                         {unidad.situacion === 'DISPONIBLE' ? <SecondaryButton onClick={() => { enviarMantencionMutation.reset(); setUnidadMantencion(unidad) }}>Enviar a mantención</SecondaryButton> : null}
                       </div></td>
                     </tr>
@@ -690,7 +683,6 @@ export function Inventario() {
         </div>
       ) : null}
 
-      <MantencionError error={fichaMutation.error} />
       {unidadMantencion ? <MantencionModal title="Enviar a mantención" onClose={() => { if (!enviarMantencionMutation.isPending) setUnidadMantencion(null) }}>
         <p>¿Enviar {unidadMantencion.codigo_activo || `Unidad #${unidadMantencion.id}`} a mantención? Su situación pasará a Reparación.</p>
         <MantencionError error={enviarMantencionMutation.error} />

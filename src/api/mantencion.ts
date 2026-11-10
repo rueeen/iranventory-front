@@ -1,9 +1,10 @@
+import { descargarBlob } from '../lib/descargas'
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
 import type {
   EstadoPlan, FrecuenciaMantencion, PrioridadMantencion, TipoMantencion,
   PlanMantencion, PlanMantencionInput, RegistroMantencion, RegistroMantencionInput,
-  ResumenMantencion, ResumenImportacionPlan, FichaMantencion,
+  ResumenMantencion, ResumenImportacionPlan,
 } from '../types/mantencion'
 
 export type PlanesMantencionFiltros = ListParams & {
@@ -47,21 +48,7 @@ export async function exportarPlanMantencion(filtros?: PlanesMantencionFiltros):
   const { data, headers } = await client.get<Blob>('/api/planes-mantencion/exportar/', {
     params: params(filtros), responseType: 'blob',
   })
-  const disposition = String(headers['content-disposition'] ?? '')
-  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)
-  const plain = disposition.match(/filename="?([^";]+)"?/i)
-  let nombre = plain?.[1] ?? `Plan_de_Mantencion_${new Date().toISOString().slice(0, 10)}.xlsx`
-  if (utf8) {
-    try { nombre = decodeURIComponent(utf8[1]) } catch { /* Usar nombre simple si está mal codificado. */ }
-  }
-  const url = URL.createObjectURL(data)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nombre.replace(/[\\/]/g, '_')
-  document.body.append(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  descargarBlob(data, headers['content-disposition'], `Plan_de_Mantencion_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 export async function importarPlanMantencion(archivo: File, opciones: { simular: boolean; crearFaltantes: boolean }): Promise<ResumenImportacionPlan> {
   const body = new FormData()
@@ -85,12 +72,15 @@ export async function actualizarRegistroMantencion(id: number, input: Partial<Re
 export async function eliminarRegistroMantencion(id: number): Promise<void> {
   await client.delete(`/api/registros-mantencion/${id}/`)
 }
-export async function obtenerFichaMantencion(unidadId: number): Promise<FichaMantencion> {
-  return (await client.get(`/api/unidades/${unidadId}/ficha-mantencion/`)).data
+export async function descargarFichaMantencion(unidadId: number, formato: 'docx' | 'pdf', codigo?: string | null): Promise<void> {
+  const { data, headers } = await client.get<Blob>(`/api/unidades/${unidadId}/ficha-mantencion/`, {
+    params: { formato }, responseType: 'blob',
+  })
+  descargarBlob(data, headers['content-disposition'], `Ficha_Mantencion_${codigo || unidadId}.${formato}`)
 }
 export const mantencionApi = {
   obtenerPlanesMantencion, obtenerPlanMantencion, crearPlanMantencion, actualizarPlanMantencion,
   eliminarPlanMantencion, obtenerResumenMantencion, exportarPlanMantencion, importarPlanMantencion,
   obtenerRegistrosMantencion, obtenerRegistroMantencion, crearRegistroMantencion,
-  actualizarRegistroMantencion, eliminarRegistroMantencion, obtenerFichaMantencion,
+  actualizarRegistroMantencion, eliminarRegistroMantencion, descargarFichaMantencion,
 }
