@@ -5,7 +5,7 @@ import { mantencionApi, type PlanesMantencionFiltros, type RegistrosMantencionFi
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { queryKeys } from '../lib/queryKeys'
 import { clasesInacap } from '../lib/theme'
-import { generarPdfFichaMantencion } from '../lib/pdfFichaMantencion'
+import { BotonFicha } from '../components/mantencion/BotonFicha'
 import {
   etiquetasEstadoPlan, estilosEstadoPlan, etiquetasFrecuencia, etiquetasPrioridad, estilosPrioridad,
   etiquetasTipoMantencion, estilosTipoMantencion, formatearFechaCorta, formatearCLP,
@@ -66,12 +66,6 @@ export function Mantencion() {
   const resumen = useQuery({ queryKey: queryKeys.resumenMantencion(), queryFn: mantencionApi.obtenerResumenMantencion, staleTime: 60_000 })
   const planes = useQuery({ queryKey: queryKeys.planesMantencion.list(filtros), queryFn: () => mantencionApi.obtenerPlanesMantencion(filtros), enabled: tab === 'planes' })
   const registros = useQuery({ queryKey: queryKeys.registrosMantencion.list(filtrosRegistros), queryFn: () => mantencionApi.obtenerRegistrosMantencion(filtrosRegistros), enabled: tab === 'registros' })
-  const pdf = useMutation({
-    mutationFn: async (id: number) => {
-      const ficha = await qc.fetchQuery({ queryKey: queryKeys.fichaMantencion(id), queryFn: () => mantencionApi.obtenerFichaMantencion(id) })
-      generarPdfFichaMantencion(ficha, id)
-    },
-  })
   const exportar = useMutation({
     mutationFn: () => { const { page: _page, ...todos } = filtros; return mantencionApi.exportarPlanMantencion(todos) },
   })
@@ -82,7 +76,7 @@ export function Mantencion() {
       else await mantencionApi.eliminarRegistroMantencion(borrar.id)
     },
     onSuccess: () => {
-      for (const key of [queryKeys.planesMantencion.all, queryKeys.registrosMantencion.all, queryKeys.unidades.all, ['fichaMantencion']]) void qc.invalidateQueries({ queryKey: key })
+      for (const key of [queryKeys.planesMantencion.all, queryKeys.registrosMantencion.all, queryKeys.unidades.all]) void qc.invalidateQueries({ queryKey: key })
       setBorrar(null)
     },
   })
@@ -106,7 +100,7 @@ export function Mantencion() {
     <div className="flex flex-wrap gap-3" role="tablist" aria-label="Mantención">
       {(['planes', 'registros'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? primaryClass : buttonClass} onClick={() => setTab(t)}>{t === 'planes' ? 'Plan de mantención' : 'Registros'}</button>)}
     </div>
-    <ErrorPanel error={pdf.error || exportar.error} />
+    <ErrorPanel error={exportar.error} />
     {tab === 'planes' ? <div className={`rounded-3xl p-5 ${clasesInacap.superficie}`}>
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Field label="Búsqueda"><input type="search" className={inputClass} value={search} onChange={e => setSearch(e.target.value)} /></Field>
@@ -132,7 +126,7 @@ export function Mantencion() {
           <td className={cell}><div className="flex flex-wrap gap-2">
             <button className={buttonClass} onClick={() => setEditor({ tipo: 'registro', plan: p })}>Registrar</button>
             <button className={buttonClass} onClick={() => setEditor({ tipo: 'plan', plan: p })}>Editar</button>
-            <button className={buttonClass} disabled={pdf.isPending} onClick={() => pdf.mutate(p.unidad.id)}>Ficha PDF</button>
+            <BotonFicha unidadId={p.unidad.id} codigo={p.unidad.codigo_activo} />
             <button className={buttonClass} onClick={() => { eliminar.reset(); setBorrar({ tipo: 'plan', id: p.id }) }}>Eliminar</button>
           </div></td>
         </tr>)}</tbody>

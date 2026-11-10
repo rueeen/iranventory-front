@@ -14,7 +14,7 @@ export const queryKeys = {
   planesMantencion: resourceKeys('planesMantencion'),
   registrosMantencion: resourceKeys('registrosMantencion'),
   resumenMantencion: () => ['planesMantencion', 'resumen'] as const,
-  fichaMantencion: (id: number) => ['fichaMantencion', id] as const,
+  capacidadesDocumentos: () => ['documentos', 'capacidades'] as const,
   categorias: resourceKeys('categorias'),
   carreras: resourceKeys('carreras'),
   asignaturas: resourceKeys('asignaturas'),

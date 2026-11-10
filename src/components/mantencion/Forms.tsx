@@ -69,7 +69,7 @@ export function RegistroForm({ registro, unidadPlan, planId, onClose }: {
   const mutation = useMutation({
     mutationFn: () => registro ? mantencionApi.actualizarRegistroMantencion(registro.id, form) : mantencionApi.crearRegistroMantencion(form),
     onSuccess: () => {
-      for (const key of [queryKeys.planesMantencion.all, queryKeys.registrosMantencion.all, queryKeys.unidades.all, ['fichaMantencion']]) void qc.invalidateQueries({ queryKey: key })
+      for (const key of [queryKeys.planesMantencion.all, queryKeys.registrosMantencion.all, queryKeys.unidades.all]) void qc.invalidateQueries({ queryKey: key })
       onClose()
     },
   })

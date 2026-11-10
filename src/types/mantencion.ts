@@ -82,20 +82,3 @@ export type ResumenImportacionPlan = {
   advertencias: string[]
   simulado: boolean
 }
-export type FichaMantencion = {
-  area: string
-  sede: string
-  nombre_equipo: string
-  tipo_equipo: string
-  fecha_solicitud_mantenimiento: string | null
-  marca: string
-  modelo: string
-  ubicacion: string
-  serie: string
-  codigo_inventario: string
-  codigo_peoplesoft: string | null
-  codigo_proyecto: string
-  periodo_calibracion: string
-  registros: (Pick<RegistroMantencion, 'fecha_realizacion' | 'descripcion' | 'empresa' |
-    'costo' | 'tipo' | 'realizado_por'> & { orden_compra: string })[]
-}
