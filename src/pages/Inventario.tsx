@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { catalogoApi } from '../api/catalogo'
+import { mantencionApi } from '../api/mantencion'
+import { generarPdfFichaMantencion } from '../lib/pdfFichaMantencion'
+import { Modal as MantencionModal, ErrorPanel as MantencionError, primaryClass } from '../components/mantencion/Shared'
 import { inventarioApi, type UnidadesFiltros } from '../api/inventario'
 import { extractApiErrorMessage, type Paginated } from '../types/api'
 import { clasesInacap } from '../lib/theme'
@@ -30,7 +33,13 @@ type TipoEquipoFormState = {
   observaciones: string
 }
 
-type UnidadFormState = {
+const camposTecnicos = {
+  codigo_peoplesoft: 'Código PeopleSoft', marca: 'Marca', modelo: 'Modelo', numero_serie: 'N° de serie',
+  codigo_proyecto: 'Código de proyecto', periodo_calibracion: 'Período de calibración',
+} as const
+type DatosTecnicosForm = Record<keyof typeof camposTecnicos, string>
+
+type UnidadFormState = DatosTecnicosForm & {
   tipoEquipoId: string
   codigoActivo: string
   estado: EstadoUnidad
@@ -115,6 +124,12 @@ function crearEstadoUnidad(unidad?: Unidad): UnidadFormState {
   return {
     tipoEquipoId: unidad ? String(unidad.tipo_equipo.id) : '',
     codigoActivo: unidad?.codigo_activo ?? '',
+    codigo_peoplesoft: unidad?.codigo_peoplesoft ?? '',
+    marca: unidad?.marca ?? '',
+    modelo: unidad?.modelo ?? '',
+    numero_serie: unidad?.numero_serie ?? '',
+    codigo_proyecto: unidad?.codigo_proyecto ?? '',
+    periodo_calibracion: unidad?.periodo_calibracion ?? '',
     estado: unidad?.estado ?? 'BUENO',
     situacion: unidad?.situacion ?? 'DISPONIBLE',
     ubicacionId: unidad?.ubicacion ? String(unidad.ubicacion.id) : '',
@@ -138,6 +153,12 @@ function construirTipoEquipoInput(state: TipoEquipoFormState): TipoEquipoInput {
 function construirUnidadInput(state: UnidadFormState): UnidadInput {
   return {
     tipo_equipo_id: Number(state.tipoEquipoId),
+    codigo_peoplesoft: state.codigo_peoplesoft.trim() || null,
+    marca: state.marca.trim(),
+    modelo: state.modelo.trim(),
+    numero_serie: state.numero_serie.trim(),
+    codigo_proyecto: state.codigo_proyecto.trim(),
+    periodo_calibracion: state.periodo_calibracion.trim(),
     codigo_activo: state.codigoActivo.trim() || null,
     estado: state.estado,
     situacion: state.situacion,
@@ -166,12 +187,13 @@ function ActionButton({ children, onClick }: { children: ReactNode; onClick: () 
   )
 }
 
-function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+function SecondaryButton({ children, onClick, disabled = false }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${clasesInacap.botonSecundario}`}
       type="button"
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </button>
@@ -216,6 +238,7 @@ export function Inventario() {
   const [requiereRevision, setRequiereRevision] = useState<FiltroRevision>('TODAS')
   const [tipoFormMode, setTipoFormMode] = useState<TipoEquipoFormMode | null>(null)
   const [tipoForm, setTipoForm] = useState<TipoEquipoFormState>(crearEstadoTipoEquipo())
+  const [unidadMantencion, setUnidadMantencion] = useState<Unidad | null>(null)
   const [unidadFormMode, setUnidadFormMode] = useState<UnidadFormMode | null>(null)
   const [unidadForm, setUnidadForm] = useState<UnidadFormState>(crearEstadoUnidad())
   const [unidadesPage, setUnidadesPage] = useState(1)
@@ -260,6 +283,20 @@ export function Inventario() {
       setTipoFormMode(null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.tiposEquipo.lists() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.unidades.lists() })
+    },
+  })
+
+  const fichaMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const ficha = await queryClient.fetchQuery({ queryKey: queryKeys.fichaMantencion(id), queryFn: () => mantencionApi.obtenerFichaMantencion(id) })
+      generarPdfFichaMantencion(ficha, id)
+    },
+  })
+  const enviarMantencionMutation = useMutation({
+    mutationFn: (id: number) => inventarioApi.enviarUnidadAMantencion(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.unidades.all })
+      setUnidadMantencion(null)
     },
   })
 
@@ -545,13 +582,17 @@ export function Inventario() {
                   {unidadesPagina.map((unidad) => (
                     <tr key={unidad.id} className="align-top">
                       <td className="px-6 py-4 text-slate-500">#{unidad.id}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-950">{unidad.codigo_activo ?? `Unidad #${unidad.id}`}</td>
+                      <td className="px-6 py-4 font-semibold text-slate-950">{unidad.codigo_activo ?? `Unidad #${unidad.id}`}<small className="block font-normal text-slate-500">{unidad.codigo_peoplesoft}</small></td>
                       <td className="px-6 py-4 text-slate-700">{unidad.tipo_equipo.nombre}</td>
                       <td className="px-6 py-4"><Badge className={estilosEstado[unidad.estado]}>{etiquetasEstado[unidad.estado]}</Badge></td>
                       <td className="px-6 py-4"><Badge className={estilosSituacion[unidad.situacion]}>{etiquetasSituacion[unidad.situacion]}</Badge></td>
                       <td className="px-6 py-4 text-slate-700">{unidad.requiere_revision ? 'Sí' : 'No'}</td>
                       <td className="px-6 py-4 text-slate-600">{obtenerUbicacion(unidad)}</td>
-                      <td className="px-6 py-4"><SecondaryButton onClick={() => abrirEditarUnidad(unidad)}>Editar</SecondaryButton></td>
+                      <td className="px-6 py-4"><div className="flex flex-wrap gap-2">
+                        <SecondaryButton onClick={() => abrirEditarUnidad(unidad)}>Editar</SecondaryButton>
+                        <SecondaryButton disabled={fichaMutation.isPending} onClick={() => fichaMutation.mutate(unidad.id)}>Ficha PDF</SecondaryButton>
+                        {unidad.situacion === 'DISPONIBLE' ? <SecondaryButton onClick={() => { enviarMantencionMutation.reset(); setUnidadMantencion(unidad) }}>Enviar a mantención</SecondaryButton> : null}
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -649,6 +690,12 @@ export function Inventario() {
         </div>
       ) : null}
 
+      <MantencionError error={fichaMutation.error} />
+      {unidadMantencion ? <MantencionModal title="Enviar a mantención" onClose={() => { if (!enviarMantencionMutation.isPending) setUnidadMantencion(null) }}>
+        <p>¿Enviar {unidadMantencion.codigo_activo || `Unidad #${unidadMantencion.id}`} a mantención? Su situación pasará a Reparación.</p>
+        <MantencionError error={enviarMantencionMutation.error} />
+        <button type="button" className={primaryClass} disabled={enviarMantencionMutation.isPending} onClick={() => enviarMantencionMutation.mutate(unidadMantencion.id)}>Confirmar envío</button>
+      </MantencionModal> : null}
       {unidadFormMode ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <form className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" onSubmit={guardarUnidad}>
@@ -659,6 +706,14 @@ export function Inventario() {
               </div>
               <SecondaryButton onClick={() => setUnidadFormMode(null)}>Cerrar</SecondaryButton>
             </div>
+            <details className="my-4 rounded-xl border border-slate-200 p-4" open>
+              <summary className="cursor-pointer font-semibold">Datos técnicos</summary>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                {Object.entries(camposTecnicos).map(([key, label]) => <label key={key} className="text-sm font-medium text-slate-700">{label}
+                  <input className={`mt-1 w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ${clasesInacap.focoMarca}`} value={unidadForm[key as keyof DatosTecnicosForm]} onChange={e => setUnidadForm(prev => ({ ...prev, [key]: e.target.value }))} />
+                </label>)}
+              </div>
+            </details>
             {guardarUnidadMutation.isError ? <div className="mt-4"><ErrorPanel message={extractApiErrorMessage(guardarUnidadMutation.error)} /></div> : null}
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2 md:col-span-2">

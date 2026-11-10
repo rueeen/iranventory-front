@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 
 import { AppLayout } from './components/layout/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { Mantencion } from './pages/Mantencion'
 import { Home } from './pages/Home'
 import { Compras } from './pages/Compras'
 import { Login } from './pages/Login'
@@ -43,6 +44,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/mantencion" element={<ProtectedRoute roles={STAFF_ROLES}><Mantencion /></ProtectedRoute>} />
         <Route
           path="/catalogo/importar-estandar"
           element={
