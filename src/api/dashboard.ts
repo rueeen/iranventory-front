@@ -1,3 +1,4 @@
+import { obtenerResumenAtrasos } from './prestamos'
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
 
@@ -41,6 +42,7 @@ export function obtenerTotalOrdenesCompra(): Promise<DashboardTotal> {
 }
 
 export const dashboardApi = {
+  obtenerResumenAtrasos,
   obtenerTotalTiposEquipo,
   obtenerTotalUnidades,
   obtenerTotalPrestamos,

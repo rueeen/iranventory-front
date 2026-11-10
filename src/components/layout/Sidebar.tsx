@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
+import { obtenerResumenAtrasos } from '../../api/prestamos'
+import { queryKeys } from '../../lib/queryKeys'
 import { NavLink } from 'react-router-dom'
 
 import { useAuth } from '../../features/auth/AuthContext'
@@ -45,6 +48,12 @@ const menuItems: MenuItem[] = [
 
 export function Sidebar() {
   const { usuario } = useAuth()
+  const resumenQuery = useQuery({
+    queryKey: queryKeys.prestamosResumenAtrasos(),
+    queryFn: obtenerResumenAtrasos,
+    staleTime: 60_000,
+  })
+  const atrasados = resumenQuery.isSuccess ? resumenQuery.data.atrasados : 0
   const visibleItems = menuItems.filter((item) => usuario && item.roles.includes(usuario.rol))
 
   return (
@@ -71,6 +80,11 @@ export function Sidebar() {
             to={item.to}
           >
             {item.label}
+            {item.to === '/prestamos' && atrasados > 0 ? (
+              <span aria-label={`${atrasados} préstamos atrasados`} className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${clasesInacap.chipError}`}>
+                {atrasados}
+              </span>
+            ) : null}
           </NavLink>
         ))}
       </nav>

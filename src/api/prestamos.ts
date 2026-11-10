@@ -1,11 +1,13 @@
 import { client } from './client'
 import type { ListParams, Paginated } from '../types/api'
-import type { EstadoPrestamo, Prestamo, PrestamoInput } from '../types/prestamos'
+import type { EstadoPrestamo, Prestamo, PrestamoInput, ResumenAtrasos } from '../types/prestamos'
 
 export type PrestamosFiltros = {
   page?: number
   search?: string
   estado?: EstadoPrestamo | ''
+  atrasado?: boolean
+  ordering?: string
 }
 
 function construirParams(filtros?: PrestamosFiltros): ListParams {
@@ -22,6 +24,13 @@ function construirParams(filtros?: PrestamosFiltros): ListParams {
 
   if (filtros?.estado) {
     params.estado = filtros.estado
+  }
+
+  if (filtros?.atrasado === true) {
+    params.atrasado = 'true'
+  }
+  if (filtros?.ordering) {
+    params.ordering = filtros.ordering
   }
 
   return params
@@ -45,7 +54,13 @@ export async function crearPrestamo(input: PrestamoInput): Promise<Prestamo> {
   return data
 }
 
+export async function obtenerResumenAtrasos(): Promise<ResumenAtrasos> {
+  const { data } = await client.get<ResumenAtrasos>('/api/prestamos/resumen-atrasos/')
+  return data
+}
+
 export const prestamosApi = {
+  obtenerResumenAtrasos,
   obtenerPrestamos,
   obtenerPrestamo,
   crearPrestamo,
