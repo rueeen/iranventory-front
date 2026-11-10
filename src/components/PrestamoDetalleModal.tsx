@@ -425,6 +425,12 @@ export function PrestamoDetalleModal({
 
           {prestamo ? (
             <>
+              {prestamo.esta_atrasado ? (
+                <div role="alert" className={`rounded-2xl px-4 py-3 text-sm ${clasesInacap.alertaError}`}>
+                  Este préstamo está atrasado{prestamo.dias_atraso !== null ? ` ${prestamo.dias_atraso} ${prestamo.dias_atraso === 1 ? 'día' : 'días'}` : ''}.
+                  {' '}Fecha comprometida: {formatearFecha(prestamo.fecha_devolucion_comprometida)}.
+                </div>
+              ) : null}
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-slate-950">{obtenerNombreSolicitante(prestamo)}</h3>

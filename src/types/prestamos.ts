@@ -38,6 +38,8 @@ export type Prestamo = {
   fecha_solicitud: string
   fecha_requerida: string | null
   fecha_devolucion_comprometida: string | null
+  esta_atrasado: boolean
+  dias_atraso: number | null
   aprobado_por: number | null
   preparado_por: number | null
   entregado_por: number | null
@@ -60,4 +62,14 @@ export type RegistrarDevolucionItem = {
   cantidad_devuelta: number
   cantidad_no_devuelta: number
   condicion: EstadoUnidad
+}
+
+export type ResumenAtrasos = {
+  atrasados: number
+  vencen_hoy: number
+  mas_antiguo: {
+    id: number
+    fecha_devolucion_comprometida: string
+    dias_atraso: number
+  } | null
 }

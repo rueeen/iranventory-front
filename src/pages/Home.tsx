@@ -89,6 +89,13 @@ function MetricCard({ description, query, title }: DashboardMetric) {
 export function Home() {
   const { usuario } = useAuth()
 
+  const resumenQuery = useQuery({
+    queryKey: queryKeys.prestamosResumenAtrasos(),
+    queryFn: dashboardApi.obtenerResumenAtrasos,
+    staleTime: 60_000,
+  })
+  const resumen = resumenQuery.isSuccess ? resumenQuery.data : undefined
+
   const puedeVerMetricasStaff = tieneRol(usuario, rolesStaff)
   const puedeVerMetricasPrestamos = tieneRol(usuario, rolesPrestamos)
 
@@ -177,6 +184,22 @@ export function Home() {
           </div>
         </div>
       </article>
+
+      {resumen && resumen.atrasados > 0 ? (
+        <div role="alert" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaError}`}>
+          <p>
+            {tieneRol(usuario, rolesStaff)
+              ? `Hay ${resumen.atrasados} préstamos atrasados`
+              : `Tienes ${resumen.atrasados} préstamos atrasados. Devuelve el equipo en el pañol lo antes posible.`}
+          </p>
+          {tieneRol(usuario, rolesStaff) && resumen.vencen_hoy > 0 ? <p>{resumen.vencen_hoy} vencen hoy</p> : null}
+          <Link className="mt-2 inline-block font-semibold underline" to="/prestamos?atrasado=1">Ver atrasados</Link>
+        </div>
+      ) : resumen && resumen.atrasados === 0 && resumen.vencen_hoy > 0 ? (
+        <div role="status" className={`rounded-2xl px-5 py-4 text-sm ${clasesInacap.alertaAdvertencia}`}>
+          {resumen.vencen_hoy} préstamos vencen hoy
+        </div>
+      ) : null}
 
       <div>
         <div className="mb-4">

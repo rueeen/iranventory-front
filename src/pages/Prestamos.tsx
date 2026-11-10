@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
@@ -27,6 +28,7 @@ import {
   etiquetasEstado,
   estilosEstado,
   formatearFechaCorta,
+  textoAtraso,
   obtenerUsernameSolicitante,
   type AccionPrestamo,
 } from '../lib/prestamos'
@@ -408,6 +410,9 @@ function SolicitudPrestamoForm({ unidades }: { unidades: Unidad[] }) {
 
 
 export function Prestamos() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const soloAtrasados = searchParams.get('atrasado') === '1'
+
   const { usuario } = useAuth()
   const puedeCrearSolicitud = tieneRol(usuario, ['ALUMNO', 'DOCENTE'])
   const puedeGestionar = tieneRol(usuario, ['PANOLERO', 'DIRECTOR'])
@@ -421,8 +426,11 @@ export function Prestamos() {
   const busquedaDebounced = useDebouncedValue(busqueda, 300)
 
   const filtros = useMemo(
-    () => ({ page, search: busquedaDebounced, estado }),
-    [busquedaDebounced, estado, page],
+    () => ({
+      page, search: busquedaDebounced, estado,
+      ...(soloAtrasados ? { atrasado: true, ordering: 'fecha_devolucion_comprometida' } : {}),
+    }),
+    [busquedaDebounced, estado, page, soloAtrasados],
   )
 
   const prestamosQuery = useQuery({
@@ -504,6 +512,20 @@ export function Prestamos() {
     setPage(1)
   }
 
+  useEffect(() => {
+    setPage(1)
+  }, [soloAtrasados])
+
+  function actualizarAtrasados(activo: boolean) {
+    setPage(1)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (activo) next.set('atrasado', '1')
+      else next.delete('atrasado')
+      return next
+    })
+  }
+
   function actualizarEstado(valor: EstadoPrestamo | '') {
     setEstado(valor)
     setPage(1)
@@ -555,7 +577,7 @@ export function Prestamos() {
       {puedeCrearSolicitud ? <SolicitudPrestamoForm unidades={unidadesQuery.data ?? []} /> : null}
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto]">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Búsqueda por texto</span>
             <input
@@ -582,6 +604,10 @@ export function Prestamos() {
               ))}
             </select>
           </label>
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox" checked={soloAtrasados} onChange={(event) => actualizarAtrasados(event.target.checked)} />
+            Solo atrasados
+          </label>
         </div>
       </div>
 
@@ -596,6 +622,7 @@ export function Prestamos() {
                 <th className="px-5 py-4 font-semibold">Solicitante</th>
                 <th className="px-5 py-4 font-semibold">Estado</th>
                 <th className="px-5 py-4 font-semibold">Fecha solicitud</th>
+                <th className="px-5 py-4 font-semibold">Devolución comprometida</th>
                 <th className="px-5 py-4 font-semibold">Ítems</th>
                 <th className="px-5 py-4 font-semibold">Acción</th>
               </tr>
@@ -603,7 +630,7 @@ export function Prestamos() {
             <tbody className="divide-y divide-slate-100 bg-white">
               {prestamosQuery.isLoading ? (
                 <tr>
-                  <td className="px-5 py-8 text-center text-sm font-medium text-slate-500" colSpan={6}>
+                  <td className="px-5 py-8 text-center text-sm font-medium text-slate-500" colSpan={7}>
                     Cargando préstamos...
                   </td>
                 </tr>
@@ -611,7 +638,7 @@ export function Prestamos() {
 
               {prestamosQuery.isError ? (
                 <tr>
-                  <td className="px-5 py-8" colSpan={6}>
+                  <td className="px-5 py-8" colSpan={7}>
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
                       <p className="text-sm font-semibold uppercase tracking-widest text-[#DC2626]">Error</p>
                       <h2 className="mt-2 text-xl font-bold text-red-950">No se pudieron cargar los préstamos</h2>
@@ -625,9 +652,9 @@ export function Prestamos() {
 
               {prestamosQuery.isSuccess && prestamos.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-10 text-center" colSpan={6}>
+                  <td className="px-5 py-10 text-center" colSpan={7}>
                     <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Sin resultados</p>
-                    <h2 className="mt-2 text-xl font-bold text-slate-950">No hay préstamos para mostrar</h2>
+                    <h2 className="mt-2 text-xl font-bold text-slate-950">{soloAtrasados ? 'No hay préstamos atrasados.' : 'No hay préstamos para mostrar'}</h2>
                     <p className="mt-2 text-sm leading-6 text-slate-500">
                       Ajusta los filtros o crea una nueva solicitud de préstamo.
                     </p>
@@ -636,11 +663,21 @@ export function Prestamos() {
               ) : null}
 
               {prestamos.map((prestamo) => (
-                <tr className="transition hover:bg-slate-50" key={prestamo.id}>
+                <tr className={`transition hover:bg-slate-50 ${prestamo.esta_atrasado ? 'bg-red-50/40' : ''}`} key={prestamo.id}>
                   <td className="px-5 py-4 font-semibold text-slate-950">#{prestamo.id}</td>
                   <td className="px-5 py-4 text-slate-700">{obtenerUsernameSolicitante(prestamo)}</td>
                   <td className="px-5 py-4"><EstadoBadge estado={prestamo.estado} /></td>
                   <td className="px-5 py-4 text-slate-600">{formatearFechaCorta(prestamo.fecha_solicitud)}</td>
+                  <td className="px-5 py-4 text-slate-600">
+                    {formatearFechaCorta(prestamo.fecha_devolucion_comprometida)}
+                    {prestamo.esta_atrasado ? (
+                      <div className="mt-1">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${clasesInacap.chipError}`}>
+                          {textoAtraso(prestamo)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="px-5 py-4 text-slate-600">{prestamo.detalles?.length ?? 0}</td>
                   <td className="px-5 py-4">
                     <button
